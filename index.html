@@ -154,7 +154,7 @@
 <p id="novaCreateIntro" class="help">Describe your picture. Image creation uses Cloudflare Workers AI and its free-plan allocation when available.</p>
 <label for="novaCreatePrompt">What should NOVA make?</label><textarea id="novaCreatePrompt" rows="4" maxlength="1800" class="nova-create-prompt" placeholder="A realistic electric SUV in a modern parking garage"></textarea>
 <div id="novaImageOptions" class="nova-create-fields"><label for="novaImageStyle">Look</label><select id="novaImageStyle"><option value="realistic">Realistic</option><option value="game">Game render</option><option value="cinematic">Cinematic</option><option value="concept">Concept art</option><option value="cartoon">Cartoon</option><option value="blueprint">Blueprint</option></select><label for="novaImageRatio">Shape</label><select id="novaImageRatio"><option value="square">Square 1:1</option><option value="wide">Wide 16:9 crop</option><option value="portrait">Vertical 9:16 crop</option></select></div>
-<div id="novaGLBOptions" class="nova-create-fields" hidden><label for="novaGLBKind">Asset type</label><select id="novaGLBKind"><option value="auto">Automatically detect</option><option value="vehicle">Vehicle</option><option value="building">Building / house</option><option value="garage">Parking garage</option><option value="character">Character</option><option value="tree">Tree</option><option value="prop">Prop / furniture</option></select><label for="novaGLBDetail">Geometry</label><select id="novaGLBDetail"><option value="normal">Standard starter</option><option value="low">Simplified mobile</option></select></div>
+<div id="novaGLBOptions" class="nova-create-fields" hidden><label for="novaGLBKind">Asset type</label><select id="novaGLBKind"><option value="auto">Automatically detect</option><option value="vehicle">Vehicle</option><option value="building">Building / house</option><option value="garage">Parking garage</option><option value="character">Character</option><option value="tree">Tree</option><option value="prop">Prop / furniture</option></select><label for="novaGLBDetail">Geometry</label><select id="novaGLBDetail"><option value="normal">Standard starter</option><option value="low">Simplified mobile</option></select><label for="novaGLBAI">NOVA Pro planning</label><label class="setting-check"><input id="novaGLBAI" type="checkbox"> Ask hosted AI to arrange custom parts (uses AI quota)</label></div>
 <button type="button" class="primary-wide" id="novaCreateRun">Generate</button>
 <p id="novaCreateStatus" class="help" role="status" aria-live="polite">Ready</p>
 <div class="nova-create-result"><img id="novaCreatedImage" alt="NOVA generated picture" hidden><canvas id="novaCreated3D" aria-label="Schematic preview of your 3D starter model" hidden></canvas><p id="novaCreatedDescription" class="help"></p></div>
@@ -641,7 +641,21 @@ async function runCreateStudio(){
    $('novaCreatedDescription').textContent='Generated with '+data.model+'. Download to save; the image itself is not put into cloud memory.';
    recordUsage('pro');
   }else{
-   const result=NOVA3D.build(prompt,{kind:$('novaGLBKind').value,detail:$('novaGLBDetail').value});
+   const options={kind:$('novaGLBKind').value,detail:$('novaGLBDetail').value};
+   let result;
+   if($('novaGLBAI').checked){
+    if(!state.passcode||state.passcode.length<8)throw Error('NOVA Pro planning needs your owner passcode and deployed Cloudflare AI. Uncheck it to build GLB offline.');
+    $('novaCreateStatus').textContent='Asking NOVA Pro to plan custom 3D components…';
+    const res=await fetch(apiEndpoint('/api/3d-plan'),{
+     method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode},
+     body:JSON.stringify({prompt,kind:options.kind==='auto'?NOVA3D.detect(prompt):options.kind}),
+     cache:'no-store',signal:creatorAbort.signal
+    });
+    let data={};try{data=await res.json()}catch{}
+    if(!res.ok)throw Error(data.error||'3D AI planning is unavailable. Uncheck NOVA Pro planning to generate a standard offline GLB.');
+    result=NOVA3D.buildFromPlan(prompt,data,options);
+    recordUsage('pro');
+   }else result=NOVA3D.build(prompt,options);
    asset={type:'glb',bytes:result.bytes,filename:result.filename,scene:result.scene};
    $('novaCreated3D').hidden=false;
    NOVACreate.drawPreview($('novaCreated3D'),result.scene,creatorYaw);
