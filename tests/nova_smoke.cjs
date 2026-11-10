@@ -28,3 +28,45 @@ for(const feature of ['runAIWithFallback','NOVA_SITE_ORIGIN','function modelOpti
 assert(worker.includes('const EMBEDDED_ASSETS'),'Cloudflare Worker does not include the standalone website bundle');
 assert(worker.includes('function artifactDocument'),'Cloudflare Worker bundle does not include new artifacts UI');
 console.log('NOVA frontend, artifacts, deployment and backend smoke checks passed.');
+
+assert(html.includes('id="testPro"'),'Missing NOVA Pro diagnostic button');
+assert(worker.includes("nova-pro-reliability-v1"),'Worker release version missing');
+assert(worker.includes('async function verifiedProResponse'),'Verified NOVA Pro response handler missing');
+assert(worker.includes("'/api/diagnose'"),'Worker diagnostic endpoint missing');
+
+// Use mocked Workers AI only, never spend actual AI quota in CI.
+async function checkPro(){
+ const backend=worker.slice(worker.indexOf('// NOVA 3 — Cloudflare Worker.'));
+ const evaluate=new Function(backend.replace('export default {','const handler = {')+'\nreturn {handler};');
+ const {handler}=evaluate();
+ const calls=[];
+ const env={
+  NOVA_PASSCODE:'demo_passcode_123',
+  NOVA_ENABLE_PAID_PRO:'false',
+  AI:{async run(model,options){
+   calls.push({model,stream:options.stream,effort:options.reasoning_effort});
+   if(model.includes('qwen'))return{choices:[{message:{content:''},finish_reason:'stop'}]};
+   return{choices:[{message:{content:'READY'},finish_reason:'stop'}]};
+  }}
+ };
+ const request=new Request('https://nova-ai.example.workers.dev/api/diagnose',{
+  method:'POST',headers:{'Origin':'https://exclusive2knight.github.io','Content-Type':'application/json','X-NOVA-Passcode':'demo_passcode_123'},body:'{}'
+ });
+ const response=await handler.fetch(request,env);
+ assert.equal(response.status,200,'NOVA Pro diagnostic should return 200 after fallback');
+ const data=await response.json();
+ assert.equal(data.ok,true);
+ assert.equal(data.usedFallback,true,'Empty Qwen output should trigger fallback');
+ assert.equal(data.model,'GLM 4.7 Flash');
+ assert.equal(calls[0].stream,false,'Pro must validate non-stream content before replying');
+ assert.equal(calls[1].effort,undefined,'GLM must not receive Qwen-only reasoning_effort');
+ assert.equal(response.headers.get('Access-Control-Allow-Origin'),'https://exclusive2knight.github.io');
+ const badRequest=new Request('https://nova-ai.example.workers.dev/api/diagnose',{
+  method:'POST',headers:{'Origin':'https://exclusive2knight.github.io','Content-Type':'application/json','X-NOVA-Passcode':'incorrect-passcode'},body:'{}'
+ });
+ const denied=await handler.fetch(badRequest,env);
+ assert.equal(denied.status,401,'Diagnostics must reject invalid passcodes');
+ console.log('NOVA Pro diagnostic and fallback simulated tests passed.');
+}
+checkPro().catch(e=>{console.error(e);process.exitCode=1});
+
