@@ -69,6 +69,28 @@ The GitHub Pages site provides the offline workspace and experimental local mode
 
 User data is stored in that browser by default. Speech input may involve the browser vendor's speech service; check your browser's privacy terms. AI chat sent to the Cloudflare backend shares submitted content with that service. Keep credentials in Worker secrets only.
 
+
+## NOVA Pro and local usage dashboard
+
+**NOVA Pro is a goal and a configuration—not a Claude Fable-level custom model.** The current free-compatible Pro route uses `@cf/qwen/qwen3.8-27b` with higher reasoning effort, a longer response budget, and response-style preferences. Qwen is a third-party hosted model; it is not trained by NOVA.
+
+**Optional advanced hosted backend (PAID ONLY):** An eligible Cloudflare account owner can explicitly set `NOVA_ENABLE_PAID_PRO=true` on the **Worker server** to route Pro to `@cf/deepseek-ai/deepseek-v4.1-flash-1017`. This model requires Workers Paid or prepaid AI Gateway credits and can cause usage charges. It is **disabled by default**. Never add billing information, API secrets, or passcodes to GitHub or to browser code. Neither option has been evaluated as equal to Claude Fable.
+
+The NOVA interface tracks successful locally initiated requests (including locally generated NOVA Tiny replies and Worker chat/build requests) in this browser. The usage dashboard shows:
+
+- **Today’s requests** and a configurable daily goal (UTC calendar day)
+- **Requests during the last seven UTC days** and a configurable weekly goal
+- **Today’s requests by selected model**, with visual bars
+- An optional **browser-only daily pause** that can be adjusted in Settings
+
+**These are counts, not token totals or Cloudflare neuron usage.** They do not aggregate other browsers, devices, app installations or other visitors to the Worker, and they are not an enforceable server-side billing limit. For provider usage, open the [Cloudflare Workers AI dashboard](https://dash.cloudflare.com/). To avoid unexpected charges, do not enable paid Pro unless you understand its billing.
+
+### Expanded settings
+
+The Settings panel includes model selection, response length and tone, creativity, dark/light/system appearance, default web/Build toggles, device voice choice and speed, optional voice read-aloud, memory notes, backup import/export, the browser-only daily pause, reset usage counts and delete local chat history. Existing browser data is retained by the same app storage key.
+
+**Status:** The source was uploaded and the JavaScript passed syntax/unit-level checks. This does not verify an active Worker deployment, inference availability, cloud quotas, or phone microphone behavior.
+
 ## Project status
 
 Source uploaded to GitHub. The root page is an **offline workspace** until GitHub Pages is enabled. **Live AI is not deployed** until the Cloudflare Worker is published and configured.
