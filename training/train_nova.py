@@ -13,6 +13,10 @@ from torch import nn
 from torch.nn import functional as F
 
 VOCAB = 258  # 0-255: UTF-8 byte values; 256: beginning; 257: end
+# Development profiles are original untrained architectures, not released models.
+PROFILES = {"tiny": {"context": 64, "dim": 64, "heads": 4, "layers": 2},
+            "mini": {"context": 128, "dim": 128, "heads": 4, "layers": 4},
+            "core": {"context": 256, "dim": 256, "heads": 8, "layers": 6}}
 BOS, EOS = 256, 257
 
 def load_corpus(path):
@@ -98,9 +102,16 @@ def main():
     p.add_argument("--data", default="training/examples.jsonl")
     p.add_argument("--steps", type=int, default=80)
     p.add_argument("--batch", type=int, default=8)
-    p.add_argument("--context", type=int, default=64)
-    p.add_argument("--save", default="nova-core-tiny.pt")
+    p.add_argument("--profile", choices=list(PROFILES), default="tiny")
+    p.add_argument("--context", type=int, default=None, help="Optional override for the profile context length")
+    p.add_argument("--save", default="nova-tiny.pt")
     args = p.parse_args()
+    config = dict(PROFILES[args.profile])
+    if args.context is not None:
+        if not 16 <= args.context <= 2048:
+            raise ValueError("Experimental training context must be between 16 and 2048")
+        config["context"] = args.context
+    args.context = config["context"]
     random.seed(2026)
     torch.manual_seed(2026)
     docs = load_corpus(args.data)
@@ -114,7 +125,9 @@ def main():
         valid_tokens = train_tokens  # small demo dataset; NOT a valid held-out evaluation
         print("Warning: too little validation data; evaluation reuses train tokens.")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    net = NOVATransformer(context=args.context).to(device)
+    net = NOVATransformer(**config).to(device)
+    count = sum(p.numel() for p in net.parameters())
+    print(f"NOVA {args.profile}: {count:,} trainable parameters, context {args.context} bytes/tokens")
     optimizer = torch.optim.AdamW(net.parameters(), lr=0.0007)
     for step in range(1, args.steps+1):
         net.train()
@@ -130,7 +143,7 @@ def main():
                 xv, yv = sample_batch(valid_tokens, args.context, min(args.batch, 4), device)
                 _, val = net(xv, yv)
             print(f"step={step:4d} train_loss={loss.item():.3f} validation_loss={val.item():.3f}")
-    torch.save({"model": net.cpu().state_dict(), "config": {"context": args.context, "dim":64, "heads":4, "layers":2}, "training_steps":args.steps, "data_file":args.data}, args.save)
+    torch.save({"model": net.cpu().state_dict(), "config": config, "profile": args.profile, "training_steps":args.steps, "data_file":args.data}, args.save)
     print("Saved original trained neural weights to", args.save)
     print("Unreliable experimental sample:", generate(net, "User: Hello\nNOVA: ", 100))
 
