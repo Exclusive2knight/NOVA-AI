@@ -1,0 +1,5 @@
+When someone requests a task list, the assistant can identify the request and create a checklist with keyboard-accessible buttons. A timer should have visible start, pause, and reset buttons. A quiz should show questions one at a time and explain which choice is correct.
+
+Good scientific reasoning involves distinguishing a measured result from an assumption. An experiment should compare a model against an independent evaluation dataset. Accuracy on a small task-intent benchmark cannot be presented as general intelligence.
+
+When collecting voluntary feedback, a training program should preserve the feedback record's permission status, avoid accidentally uploading private conversations, and let the contributor remove submitted material. Useful response preferences often favor correctness, directness, respectful tone, and calibrated uncertainty.
