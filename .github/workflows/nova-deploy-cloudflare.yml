@@ -1,0 +1,76 @@
+# NOVA Cloudflare deployment: opt-in automatic releases after green CI.
+# Does not run or spend Cloudflare credits until owner configures secrets
+# and explicitly turns on the NOVA_AUTO_DEPLOY repository variable.
+name: Deploy NOVA to Cloudflare
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["NOVA code and artifacts checks"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       vars.NOVA_AUTO_DEPLOY == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact verified NOVA commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate owner setup without exposing credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NOVA_D1_DATABASE_ID: ${{ secrets.NOVA_D1_DATABASE_ID }}
+        shell: bash
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" || -z "$NOVA_D1_DATABASE_ID" ]]; then
+            echo "::error::Before deploying NOVA, add CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, and NOVA_D1_DATABASE_ID in repository Actions secrets. No passwords belong in source code."
+            exit 1
+          fi
+
+      - name: Run product and security tests before deploying
+        run: |
+          node tests/nova_smoke.cjs
+          node tests/nova_online.cjs
+          node tests/nova_cloud_memory.cjs
+          node tests/nova_vision.cjs
+          node tests/nova_project_check.cjs
+          node tests/nova_preview.cjs
+          node tests/nova_behavior_eval.cjs
+
+      - name: Add D1 binding to temporary Wrangler configuration
+        env:
+          NOVA_D1_DATABASE_ID: ${{ secrets.NOVA_D1_DATABASE_ID }}
+        run: node .github/scripts/nova_make_wrangler.cjs
+
+      - name: Deploy verified NOVA Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4'
+          command: deploy --config wrangler.ci.json
