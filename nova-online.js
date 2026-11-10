@@ -84,13 +84,27 @@ function describe(result){
  const list=rows.slice(0,4).map((r,i)=>(i+1)+'. '+r.title+(r.content?' — '+r.content:''));
  return 'NOVA Native Online · '+result.provider+'\n\nHere are relevant search excerpts for “'+result.query+'”:\n\n'+list.join('\n\n')+'\n\nOpen the linked sources below to check the full information. This is sourced lookup, not a generated expert answer.';
 }
+// Web enabled does NOT mean every chat message should become a web lookup.
+// Search explicit research requests and questions where fresh/public facts matter.
 function shouldSearch(text,localResult,{enabled=false,build=false}={}){
- if(!enabled||build||localResult?.files?.length||localResult?.skill==='clarify'||localResult?.skill==='math')return false;
- const q=String(text||'').trim().toLowerCase();
- if(!q||/^(hi|hey|hello|yo|thanks|thank you|good morning|good night|what can you do)\s*[!? .]*$/i.test(q))return false;
- // If a request is explicitly for a local creation, keep using the original local builder.
- if(/^(?:please\s+)?(?:make|build|create|design)\s+(?:me\s+)?(?:a|an|the)?\s*/i.test(q)&&!/(?:search|online|web|research|look up)/i.test(q))return false;
- return true;
+ if(!enabled||build||localResult?.files?.length)return false;
+ const q=String(text||'').trim().toLowerCase().replace(/\s+/g,' ');
+ if(!q)return false;
+ const explicit=/\b(?:search\s+(?:the\s+)?(?:web|internet|online)|search\s+for|look\s*up|browse\s+(?:the\s+)?(?:web|internet)|research\b|find\s+(?:me\s+)?(?:websites?|sources?|links?)|check\s+online|find\s+online|use\s+(?:the\s+)?internet|google\s+for)\b/i.test(q);
+ if(explicit)return true;
+ // Small talk (including common voice-typing mistakes) should get a regular
+ // answer even when Web is turned on. Do not spend provider credits on it.
+ const social=q.replace(/[.!?,]+$/g,'').trim();
+ if(/^(?:hi|hey|hello|yo|sup|good (?:morning|afternoon|evening|night)|thank(?:s| you)|what(?:'s| is) up|how(?:'s| is) it going|how(?:'s| is) everything going|how (?:are|ar|r) (?:you|u|we|wi|with) (?:doing|doin|ding|going)(?: (?:today|now))?|what (?:are|r) we doing|who are you|what can you do|how was your day)$/.test(social))return false;
+ if(['clarify','math','greeting'].includes(localResult?.skill))return false;
+ if(/^(?:please\s+)?(?:make|build|create|design|generate)\s+(?:me\s+)?(?:a|an|the)?\s*/i.test(q))return false;
+ // Personal and follow-up questions are conversations, not internet queries.
+ if(/^(?:do you remember|what did (?:i|we)|what (?:about|should) (?:i|we)|can you help me|how (?:are|am) (?:i|we)|tell me what we|continue|keep going|fix (?:this|it)|try again)\b/i.test(q))return false;
+ const fresh=/\b(?:latest|newest|recent|today|tonight|tomorrow|yesterday|current|currently|this week|this month|right now|breaking|live|news|weather|forecast|2026|2027|2028|as of)\b/i.test(q);
+ // Stable public facts may warrant source lookup too; not ordinary dialogue.
+ const factual=/^(?:what (?:is|are|was|were)|who (?:is|was|are|were)|when (?:is|was|did|does)|where (?:is|was|are|were)|why (?:is|are|does|did)|how (?:does|do|did|many|much|long)|tell me about|explain (?:what|why|how)|find out)\b/i.test(q);
+ if(factual&&/\b(?:you|your|we|our|my|me|i)\b/i.test(q)&&!fresh)return false;
+ return fresh||factual;
 }
-root.NOVANativeOnline={version:'1.0',queryText,cleanSources,search,describe,shouldSearch};
+root.NOVANativeOnline={version:'1.1',queryText,cleanSources,search,describe,shouldSearch};
 })(window);
