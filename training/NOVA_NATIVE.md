@@ -1,44 +1,59 @@
-# NOVA Native — original offline AI model
+# NOVA Native 2.0 — our own trained, offline neural AI
 
-**NOVA Native** is our own small neural-network model. Its source is [`nova-native.js`](../nova-native.js). Its weights are **initialized and trained from scratch on your device**, using the original examples embedded in the project. It does **not** call Claude, GPT, Gemma, Qwen, GLM, Cloudflare Workers AI, or a paid API for its local responses.
+NOVA Native is an original **neural intent classifier** plus local tools. The neural network's model code and training dataset were built for NOVA; **no Claude, GPT, Gemma, Qwen, GLM, third-party pretrained weights, or Cloudflare inference is used for Native mode.**
 
-## What it is
+Its weights have now been **trained and bundled into the project**, so the app no longer requires a 75-pass initial training session when a new user opens it.
 
-- A compact 2-layer neural **intent classifier**, not a generative large language model.
-- 192 hashed bag-of-word/bigram input features → 48 tanh hidden units → 17 skill categories.
-- **10,097 trainable floating-point parameters**, trained by local supervised gradient updates and cross-entropy loss. It learns how to select a task category.
-- A set of transparent **local tools/templates** generates actual editable HTML, CSS, and JavaScript when a supported task is recognized. Those tools are deterministic code, not a neural language generator.
-- A local mathematical calculator, basic extractive summarizer, and limited conversational responses.
-- Training weights and custom intent examples saved to the current browser's local storage, independently of NOVA chat history.
+## Released model
 
-The activity view shows **real executed stages** (local training, tokenization, neural intent classification, local skill routing, file creation, artifact saving). It **does not show hidden private AI reasoning or execute terminal commands**. It does not claim to do either.
+| Property | NOVA Native 1.0 | NOVA Native 2.0 |
+|---|---:|---:|
+| Neural input dimensions | 192 | 1,024 |
+| Hidden units | 48 | 48 |
+| Intent categories | 17 | 17 |
+| Trainable parameters | 10,097 | 50,033 |
+| Initial training passes | 75 | 75 |
+| Trained weights shipped | No | Yes, ~131 KiB |
+| Initial model loading | Train on device | Decode bundled checkpoint |
 
-## Use it
+- **`nova-native.js`** contains original code for training, classifying requests and invoking local skills.
+- **`nova-native-weights.js`** contains the original trained weights compressed as symmetric, signed 16-bit values for browser loading. No external APIs or paid models are required.
+- Training used roughly a thousand examples including original examples, newly authored phrases and simple training-time prompt variations. The original model uses hashed word/bigram/prefix/suffix features and gradient updates.
+- Custom examples and additional training updates are saved only in the browser's local storage. Existing Native 1.0 custom intent examples are migrated where available.
+- Model size and accuracy measure **intent routing**, not general language reasoning.
 
-1. Open [NOVA AI](https://exclusive2knight.github.io/NOVA-AI/).
-2. Choose **NOVA Native · Original AI** at the top. For existing installations, refresh the page to get the latest service worker.
-3. Ask `Build a website for my business`, `Create a to-do app`, `Make a timer`, or `What is 8 * 7?`.
-4. On first use, NOVA trains its neural weights in the browser. Future requests run on your device without waiting for a Cloudflare model.
-5. Expand **Activity** under its answer to see actual work stages; open the **artifact** card to preview/edit/export generated files.
-6. Under **Settings → Original NOVA Native model**, you can manually retrain the classifier or teach it new examples mapped to a supported category.
+## Actual evaluation results
 
-The local project generator currently supports responsive websites, portfolios, to-do lists, notes, timers, four-operation calculators, dashboards with clearly marked example data, and a simple clicker mini game. Projects are starting points and should be tested and customized.
+The benchmarks were **not used verbatim as training rows**. They evaluate whether NOVA classifies a request into one of its 17 known task types.
 
-## Privacy and limitations
+| Test | Original Native 1.0 | Native 2.0 |
+|---|---:|---:|
+| `training/native_holdout_v2.json` (68 unseen requests) | 14 / 68 = **20.6%** | 58 / 68 = **85.3%** |
+| `training/native_holdout_extra.json` (34 different requests) | Not measured | 24 / 34 = **70.6%** |
 
-- No hosted AI request or passcode is needed for NOVA Native. You can use the installed PWA offline after its assets have been cached.
-- Model weights are **not** shared across devices and are **not** included in standard NOVA chat backups. Clear browser site data to delete the local weights.
-- You cannot train NOVA Native to understand arbitrary new skills by adding a prompt example alone; additional skills require implementing and testing new code.
-- Not suitable for important factual advice, complex coding, medical/legal decisions, or open-ended reasoning. The classifier may select the wrong skill. The keyword checks improve task routing but are not neural intelligence.
-- **NOVA Native is not smarter than Claude or any frontier language model.** It is a real and small beginning for independent model development.
-- The separate [PyTorch model lab](train_nova.py) implements a basic decoder-only transformer with **Tiny, Mini, and Core** profiles, but it is not integrated into this browser app and does not have trained, general-purpose weights. Running and scaling those transformer models requires a separate compute environment, datasets, evaluation, and further engineering.
+This is a limited test set. It does **not** measure open-ended dialogue, writing, coding accuracy, truthfulness, safety, long-context recall, or intelligence comparable to commercial LLMs. It also indicates room for improving understanding of unfamiliar phrases.
 
-## Next technical milestones
+GitHub Actions checks enforce a minimum accuracy of 80% on the first set and 65% on the second set so future changes cannot silently regress those particular metrics.
 
-1. Evaluate the classifier on a held-out dataset, add confidence calibration, improve vocabulary and out-of-distribution handling.
-2. Build a genuine on-device neural text generator (tokenizer + decoder transformer), train it on a legally usable dataset, and benchmark coherence.
-3. Build safe, transparent local tools and a permission-aware sandbox to plan and verify more multi-step tasks.
-4. Add optional encrypted cross-device project sync and searchable document memory.
-5. Deploy an original model inference service when there is sufficient compute; until then, the locally trained model remains intentionally small.
+## How to use
 
-The project is open under the repository's MIT License. Local training is free; no cloud credits are required.
+1. Open [NOVA AI](https://exclusive2knight.github.io/NOVA-AI/) and select **NOVA Native · Original AI**.
+2. Refresh if you previously installed an older version; the new service worker is `nova-shell-v13`.
+3. Ask `Create a to-do app`, `Build a website for a bakery`, `Make a timer`, `Create a dashboard`, or `What is 8 * 7?`.
+4. The trained checkpoint loads at startup. NOVA routes supported tasks to local tools and can create editable, sandbox-previewable Artifacts.
+5. Open the **Activity** disclosure to see the genuine local operations used. This does not disclose private chain-of-thought or invent terminal commands.
+6. Choose **Settings → Original NOVA Native model** to continue training with your own intent-labeled examples or reset device-specific training.
+
+Current supported local starters: website, portfolio, to-do list, notes, timer, calculator, dashboard, and a tiny clicker game. These are deterministic tools guided by a trained classifier; they are **not** novel code created token-by-token by a generative model.
+
+## Security, privacy and limitations
+
+The original Native mode can run fully offline once the website files have been cached. Neural weights and training examples stay in local browser storage. Native mode does not require a Cloudflare passcode or provider quota. Browser storage varies by device and can be erased by clearing website data.
+
+This is **not a general-purpose language model** and is not smarter than Claude. It can misunderstand unknown requests; local task templates are intentionally limited. The separate PyTorch decoder-only model training project under `training/train_nova.py` is experimental and does not yet have production language generation weights or browser integration.
+
+## What more training requires
+
+To make NOVA much smarter, our next work should improve data quality, label ambiguity, tokenizer efficiency, uncertainty estimation and held-out evaluation. A high-quality open-ended assistant would require training a much larger generative neural model on extensive legally usable text and code, dedicated compute, extensive safety and quality evaluations, and real tool execution.
+
+Increasing epoch count alone will not produce a frontier model; on small data it can cause overfitting.
