@@ -192,3 +192,26 @@ dialog::backdrop{background:rgba(5,10,18,.65);backdrop-filter:blur(5px)}
 @keyframes nova-spinner{to{transform:rotate(360deg)}}
 :root[data-motion="off"] .message.is-processing .bubble::after{animation:none}
 @media(prefers-reduced-motion:reduce){.message.is-processing .bubble::after{animation:none}}
+
+/* NOVA Image + GLB creation tools: compact mobile-friendly controls. */
+.create-quick{display:flex;gap:7px;align-items:center;flex-wrap:wrap;max-width:840px;margin:7px auto 0;}
+.create-quick button{border:1px solid var(--line);color:var(--ink);background:var(--panel);padding:7px 12px;border-radius:999px;font-size:12px;font-weight:650;cursor:pointer;}
+.create-quick button:hover,.create-quick button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nova-create-dialog{width:min(92vw,660px);max-height:92vh;padding:0;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:18px;}
+.nova-create-dialog::backdrop{background:#000a}
+.nova-create-dialog .dialog-content{max-height:calc(92vh - 75px);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:11px}
+.nova-create-dialog label{font-size:12px;font-weight:700;color:var(--ink)}
+.nova-create-prompt,.nova-create-fields select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px;outline:none;background:var(--paper);color:var(--ink);font:inherit}
+.nova-create-prompt{resize:vertical;min-height:96px}
+.nova-create-fields{display:grid;grid-template-columns:minmax(60px,.3fr) 1fr;gap:9px;align-items:center}
+.nova-create-fields[hidden]{display:none}
+.nova-create-fields select{font-size:13px}
+.nova-create-result img,.nova-create-result canvas{display:block;width:100%;max-height:390px;object-fit:contain;border-radius:12px;background:#192535;}
+.nova-create-result img[hidden],.nova-create-result canvas[hidden]{display:none}
+.nova-create-result canvas{height:330px;touch-action:none;}
+.nova-create-actions{display:flex;flex-wrap:wrap;gap:10px}
+.nova-create-actions button{border:1px solid var(--line);border-radius:10px;color:var(--ink);background:var(--purple);padding:10px 15px;font-weight:650}
+.nova-create-actions button[hidden]{display:none}
+.nova-chat-image{width:min(100%,550px);max-height:500px;object-fit:contain;border-radius:11px;margin-top:12px;}
+.nova-created-file{margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--purple);color:var(--ink);border:1px solid var(--line);font-weight:650;cursor:pointer;}
+@media(max-width:520px){.create-quick{padding:0 3px}.create-quick button{padding:6px 10px;font-size:11px}.nova-create-dialog .dialog-content{padding:11px}.nova-create-result canvas{height:245px}}
