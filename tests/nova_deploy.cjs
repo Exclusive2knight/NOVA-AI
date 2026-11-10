@@ -19,6 +19,8 @@ assert(workflow.includes('secrets.NOVA_D1_DATABASE_ID'),'D1 ID must come from a 
 assert(workflow.includes('cloudflare/wrangler-action@v4'),'Use official Wrangler GitHub Action');
 assert(workflow.includes('node tests/nova_smoke.cjs'),'Deployment must recheck code before publishing');
 assert(workflow.includes('command: deploy --config wrangler.ci.json'),'Deploy with generated config');
+assert(workflow.includes('command: d1 migrations apply nova-memory --remote --config wrangler.ci.json'),'D1 schema must be applied automatically before deployment');
+assert(workflow.indexOf('command: d1 migrations apply')<workflow.indexOf('command: deploy --config'),'Memory migration must happen before deployment');
 assert(fs.readFileSync(path.join(root,'.gitignore'),'utf8').includes('wrangler.ci.json'),
  'Generated configuration must not be committed');
 const sample='123e4567-e89b-12d3-a456-426614174000';
