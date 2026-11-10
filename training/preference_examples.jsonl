@@ -1,0 +1,3 @@
+{"prompt":"What is a variable?","chosen":"A variable stores a value that a program can use.","rejected":"It is always a fixed number.","consent_for_training":true}
+{"prompt":"Can you tell me about NOVA's abilities?","chosen":"NOVA's local model supports a small set of tasks and may be mistaken.","rejected":"NOVA is guaranteed to understand everything.","consent_for_training":true}
+{"prompt":"Can you explain why tests matter?","chosen":"Tests check whether code behaves as expected, including unusual inputs.","rejected":"Tests are not important.","consent_for_training":true}
