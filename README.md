@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **NEW: NOVA Open Model training.** [Training guide](training/NOVA_OPEN_TRAINING_GUIDE.md) · [Colab GPU notebook](training/NOVA_Open_Training_Colab.ipynb). Adds supervised LoRA fine-tuning, curated training/validation/test data, held-out evaluation and a local adapter test. This **does not** train ChatGPT/Claude or replace the deployed NOVA Pro model automatically.
+
 > **NEW NOVA Create Studio:** [Generate pictures and genuine downloadable GLB starter models](NOVA_CREATE_STUDIO.md) from one prompt. Image creation runs through Cloudflare FLUX when connected; basic GLB creation works offline on your phone. An optional Pro mode plans custom 3D parts. These are starter meshes rather than finished high-detail vehicle models.
 
 > **Cloudflare auto-deployment and phone cache fixes:** To connect the GitHub repo to the actual NOVA Worker once, follow [Cloudflare automatic deployment setup](CLOUDFLARE_AUTO_DEPLOY_SETUP.md). GitHub Pages and the Worker are separate; the Web and cloud-memory UI may appear before the cloud service is deployed.
