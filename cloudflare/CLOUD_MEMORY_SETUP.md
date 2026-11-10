@@ -71,8 +71,9 @@ Wrangler config. This repository intentionally does **not** invent or hardcode a
 5. Open Settings again and select **Check cloud memory**. It should show
    `Connected to Cloudflare`, followed by the number of saved entries.
 6. Choose **NOVA Pro** or another functioning hosted model for recall in normal answers.
-7. Chat. New conversation excerpts (up to 4,500 characters per record) will be
-   stored in your D1 account and retrieved when relevant to future questions.
+7. Chat. Selected user-stated project facts and preferences will be stored in
+   your D1 account and retrieved when relevant. NOVA does not automatically
+   save every chat turn or an AI-generated reply as a fact.
 8. To store an important fact right away, write it under **NOVA memory notes** and
    press **Save these notes to cloud memory**.
 
@@ -81,8 +82,8 @@ and enable cloud memory. Both devices then read from the same database.
 
 ## Privacy, security and caveats
 
-- Memory is **off by default**. Enabling it permits short new chat exchanges to be stored
-  on your Cloudflare account. This may include project details and whatever you type, so
+- Memory is **off by default**. Enabling it permits selected project facts and
+  preferences from your new messages to be stored on your Cloudflare account. This may include project details and whatever you type, so
   avoid entering secrets, private credentials, or sensitive information.
 - Memory is not end-to-end encrypted. Transport is HTTPS, and Cloudflare controls server
   storage. This is currently **single-owner access** protected by `NOVA_PASSCODE`.
@@ -94,6 +95,8 @@ and enable cloud memory. Both devices then read from the same database.
   memories** or **Clear cloud memory** to remove cloud entries. These operations happen
   in your server-side database and cannot be undone without separate backups.
 - The search is FTS5 lexical retrieval, not semantic embeddings or guaranteed understanding.
+  Duplicate text is skipped; obvious credentials are rejected. This does not guarantee
+  every memory is correct or non-sensitive; review entries regularly.
   The system retrieves relevant snippets and sends a small number to the hosted AI as
   reference material. The **model context window does not become 5 GB**.
 - This feature is not connected to the Python 1 TB local memory index, and it does not
