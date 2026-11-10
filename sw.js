@@ -1,7 +1,7 @@
 // NOVA PWA: cache app shell only. Never cache AI requests, passcodes or user data.
-const CACHE='nova-shell-v21';
+const CACHE='nova-shell-v22';
 const BASE=new URL('./',self.registration.scope);
-const SHELL=['./','./index.html','./manifest.webmanifest','./icons/nova-mark.svg','./nova-ui.css','./nova-skills.js','./nova-language.js','./nova-online.js','./nova-native-weights.js','./nova-native.js'].map(path=>new URL(path,BASE).href);
+const SHELL=['./','./index.html','./manifest.webmanifest','./icons/nova-mark.svg','./nova-ui.css','./nova-skills.js','./nova-language.js','./nova-online.js','./nova-project-check.js','./nova-native-weights.js','./nova-native.js'].map(path=>new URL(path,BASE).href);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()).catch(()=>{}));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nova-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',event=>{
