@@ -186,6 +186,7 @@ function respond(prompt,{build=false,onStep}={}){
  else if(/\b(website|webpage|landing page|web app)\b/.test(q))kind='website';
  else if(/^(summarize|shorten)\b/.test(q))kind='summary';
  else if(/^(calculate|what is\s*[0-9]|[0-9()+\-*/. ]+$)/i.test(q))kind='math';
+ if(kind!==selected.intent)add('Matched supported local skill: '+kind+' (checked task words)');
  const supported=['website','portfolio','todo','notes','timer','calculator','dashboard','game'];
  const make=build||(/\b(build|create|make|design|generate)\b/.test(q)&&supported.includes(kind));
  if(make&&supported.includes(kind)){
