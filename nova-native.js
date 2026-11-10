@@ -5,7 +5,7 @@
 */
 (function(global){
 'use strict';
-const KEY='nova-native-v1';
+const KEY='nova-native-v2';
 const CATEGORIES=['greeting','website','portfolio','todo','notes','timer','calculator','quiz','dashboard','game','math','summary','explain','creative','code','memory','general'];
 const SAMPLES={
  greeting:['hello','hi nova','hey','good morning','good evening','how are you','whats up','hello there','hey nova','say hello','greetings','hi'],
@@ -26,13 +26,18 @@ const SAMPLES={
  memory:['remember this','save this note','what did i tell you','what have you learned','teach nova something','learn this answer','show what you know','store my preference'],
  general:['what can you do','who are you','are you an ai','help me','tell me more','i need some help','what is nova native','what is your capability']
 };
-const D=192,H=48,K=CATEGORIES.length,ALPHA=0.047;
+const EXTRA_SAMPLES = {"greeting":["good day","hello assistant","hiya","howdy","hey there","good afternoon","good morning nova","what's happening","nice meeting you","what's going on","hello friend","hi again","morning","evening","a quick hello","greet me","say hi to me","how is everything"],"website":["build a homepage for a store","make a landing page for a club","launch a business site","create a site for a restaurant","put together a webpage","design a page for customers","responsive homepage design","modern storefront page","a small company website","I need an online site","make a one page site","build a mobile website","design website interface","web site for a nonprofit","generate a website template","html page for a service","set up a homepage","small business online presence","build a public web page"],"portfolio":["show my creative projects online","make a gallery of my work","personal developer site","professional CV webpage","show my photographs","present my past projects","artist personal site","work samples page","my design work showcase","make a personal resume site","online professional portfolio","a photography gallery website","a career showcase","showcase skills and work","artist profile page","professional profile website","list my projects with pictures","design my personal site"],"todo":["daily task organizer","an app for chores","list tasks with checkboxes","track my daily duties","task planning list","build a checklist","make a task organizer","workout habit task list","interactive list of things to do","manage assignments","track completed tasks","add and delete tasks","chores checklist","shopping list with completed items","daily goals list","organize tasks on my phone","schedule my tasks","task tracking app"],"notes":["note taking app","a place to jot ideas","type in a notebook","a digital diary","make a writing notebook","personal notes editor","draft notes on a webpage","save ideas in a notepad","journal writing page","memo writing interface","quick jotting tool","make a simple note writer","text editor for notes","a diary I can type in","capture little thoughts","editable notes tool","keep written reminders","make a scratchpad"],"timer":["set a study countdown","build a focus clock","make an elapsed time counter","stopwatch with start and stop","time remaining display","pomodoro focus clock","pause a timer","countdown to zero","timer for studying","a kitchen countdown clock","start and pause seconds","count time with a stopwatch","digital clock countdown","build a focus session app","workout interval timer","track seconds passing","a timer I can reset","minutes and seconds clock"],"calculator":["numeric keypad for math","a page with number buttons","four operation arithmetic tool","calculator with plus and minus","arithmetic calculator page","on screen adding machine","a number calculation app","calculate using keypad","a math calculator website","make number input with equals","build a basic calculator","a simple math keypad","calculator with buttons","add subtract multiply divide tool","interactive arithmetic tool","a numerical calculating interface","digital pocket calculator","calculator project"],"quiz":["ask me trivia questions","multiple choice testing app","general knowledge quiz","an educational trivia game","interactive quiz with score","flashcard questions and answers","a science knowledge test","quiz with correct answers","make a history trivia site","play a geography quiz","a quiz with answer choices","knowledge testing game","ask students questions","a short trivia challenge","make an exam practice quiz","interactive questionnaire","test the user with questions","quiz questions and feedback"],"dashboard":["business analytics overview","stats and metrics homepage","make admin analytics panel","charts showing performance","track user statistics","data cards and charts","website traffic overview","visualize business data","a KPI dashboard","make a management panel","summary charts and reports","monitor revenue metrics","a screen for analytics","reporting dashboard interface","performance statistics cards","project tracking metrics","create an admin interface","business stats panel"],"game":["play an arcade game","a browser clicker challenge","make an interactive score game","create a tapping mini game","simple play game","game where points increase","a little arcade experience","tap the screen to score","create an entertainment game","time limited click challenge","mini game for kids","interactive game level","score counter game","arcade scoring website","a point collecting game","build a fun browser game","make a click speed game","tap for points"],"math":["what is 12 plus 16","multiply 24 by 3","divide 20 by five","work out 18 minus seven","evaluate the expression 5+6","solve the arithmetic problem","find the sum of two numbers","how much is forty plus two","add seventeen and nine","work out three times seven","the result of 6*8","calculate a numeric expression","basic arithmetic question","find what 7 times 6 equals","what is 50 divided by two","help calculate a total","do a quick math problem","simplify 2+2"],"summary":["condense a paragraph","write a concise summary","give the key takeaways","make a short recap","extract main points","summarize this document","provide the core ideas","shorten the text","what are the main takeaways","give me a brief recap","write bullet summary","pull out the important details","short summary of these notes","reduce a long article","summarize the passage","give an overview of this writing","extract essential information","recap this material"],"explain":["teach me a programming concept","how do arrays work","describe this concept","break down a difficult idea","help me understand computers","explain machine learning basics","what is a recursive function","tell me how a CPU works","walk through this explanation","how does a computer think","explain why this happens","define the concept","help me learn JavaScript","what does this code mean","clarify this topic","teach a lesson about coding","can you explain it","help me understand networking"],"creative":["brainstorm product names","come up with unique names","invent a fictional character","give original story ideas","write a poem","suggest catchy titles","creative name generator","imagine a fantasy world","think of a novel idea","make up a new brand","write a small tale","brainstorm interesting concepts","fictional story prompt","suggest business names","invent a new hero","creative writing ideas","think of a plot","make some creative suggestions"],"code":["write a JavaScript function","help me debug Python","create a code snippet","show a programming example","fix an error in my code","explain syntax highlighting","write CSS rules","how do loops work in Python","give me sample JavaScript","help with a program","build an algorithm","implement a coding function","generate some HTML code","create reusable function","show example source code","programming help with TypeScript","debug my JavaScript","an example in Python"],"memory":["remember a preference","store this information","keep this note for next time","save a fact about me","what do you remember","teach you a new example","learn this sentence","add this to memory","recall a saved note","what did I say earlier","review saved lessons","save this for later","remember a new fact","update stored details","show my saved preferences","help you learn an intent","remember my settings","train with a sample"],"general":["tell me your capabilities","what can you do today","what are your limits","who built you","how do I use NOVA","tell me about your features","can you help","what is this application","give me an introduction","what kind of assistant are you","what tasks are possible","tell me your purpose","explain your limitations","what are you good at","help me get started","can I ask a question","I need help","describe yourself"]};
+const D=1024,H=48,K=CATEGORIES.length,ALPHA=0.035;
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function tokenize(s){return String(s).toLowerCase().match(/[a-z0-9]+/g)||[]}
 function vector(s){
  const words=tokenize(s).slice(0,85),freq=new Map();
  const add=(token,weight)=>{const i=hash(token)%D;freq.set(i,(freq.get(i)||0)+weight)};
- for(let i=0;i<words.length;i++){add('w:'+words[i],1);if(i) add('b:'+words[i-1]+'_'+words[i],1.5)}
+ for(let i=0;i<words.length;i++){
+  const word=words[i];add('w:'+word,1.2);
+  if(word.length>=5){add('pre:'+word.slice(0,4),0.38);add('suf:'+word.slice(-4),0.28)}
+  if(i)add('b:'+words[i-1]+'_'+word,1.35);
+ }
  if(words.length<3)add('short',0.15);
  const entries=[...freq.entries()],norm=Math.sqrt(entries.reduce((n,[i,v])=>n+v*v,0))||1;
  return entries.map(([i,v])=>[i,v/norm]);
@@ -64,24 +69,30 @@ function step(net,x,label,lr){
 }
 function examples(memory){
  const rows=[];
- for(const [intent,samples] of Object.entries(SAMPLES))for(const s of samples)rows.push([vector(s),CATEGORIES.indexOf(intent)]);
+ for(const [intent,samples] of Object.entries(SAMPLES))for(const item of samples)rows.push([vector(item),CATEGORIES.indexOf(intent)]);
+ for(const [intent,samples] of Object.entries(EXTRA_SAMPLES))for(const item of samples){
+  const label=CATEGORIES.indexOf(intent);
+  rows.push([vector(item),label]);
+  rows.push([vector('please '+item),label]);
+  rows.push([vector(item+' please'),label]);
+ }
  for(const item of memory||[])if(CATEGORIES.includes(item.intent))rows.push([vector(item.prompt),CATEGORIES.indexOf(item.intent)]);
  return rows;
 }
 function saveState(net,teachings){
  try{
-  localStorage.setItem(KEY,JSON.stringify({v:1,epochs:net.epochs,W1:Array.from(net.W1),b1:Array.from(net.b1),W2:Array.from(net.W2),b2:Array.from(net.b2),teachings:teachings.slice(-90)}));
+  localStorage.setItem(KEY,JSON.stringify({v:2,epochs:net.epochs,W1:Array.from(net.W1),b1:Array.from(net.b1),W2:Array.from(net.W2),b2:Array.from(net.b2),teachings:teachings.slice(-90)}));
  }catch(e){}
 }
 function loadState(){
  try{
   const s=JSON.parse(localStorage.getItem(KEY)||'null');
-  if(!s||s.v!==1||s.W1?.length!==D*H||s.W2?.length!==H*K||s.b1?.length!==H||s.b2?.length!==K)return null;
+  if(!s||s.v!==2||s.W1?.length!==D*H||s.W2?.length!==H*K||s.b1?.length!==H||s.b2?.length!==K)return null;
   return {net:{W1:Float32Array.from(s.W1),b1:Float32Array.from(s.b1),W2:Float32Array.from(s.W2),b2:Float32Array.from(s.b2),epochs:s.epochs||0},teachings:Array.isArray(s.teachings)?s.teachings.slice(-90):[]};
  }catch(e){return null}
 }
 let state=loadState()||{net:newNet(),teachings:[]},ready=!!state.net.epochs,training=null;
-function status(){return{model:'NOVA Native 1.0',architecture:'Original supervised neural network: 192 input, 48 hidden, 17 intent outputs',parameters:D*H+H+H*K+K,epochs:state.net.epochs,trained:ready,teachings:state.teachings.length,online:false,provider:'None'}}
+function status(){return{model:'NOVA Native 2.0',architecture:'Original supervised neural network: 1024 input, 48 hidden, 17 intent outputs',parameters:D*H+H+H*K+K,epochs:state.net.epochs,trained:ready,teachings:state.teachings.length,online:false,provider:'None'}}
 function pause(){return new Promise(resolve=>setTimeout(resolve,0))}
 async function train(onStep){
  if(training)return training;
@@ -208,5 +219,5 @@ async function teach(prompt,intent){
  return status();
 }
 function reset(){try{localStorage.removeItem(KEY)}catch(e){}state={net:newNet(),teachings:[]};ready=false}
-global.NOVANative={version:'1.0',categories:CATEGORIES.slice(),status,train,respond,classify,teach,reset};
+global.NOVANative={version:'2.0',categories:CATEGORIES.slice(),status,train,respond,classify,teach,reset};
 })(window);
