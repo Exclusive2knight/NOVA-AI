@@ -228,6 +228,7 @@ function respond(prompt,{build=false,onStep}={}){
  else if(/\b(timer|stopwatch|countdown|pomodoro)\b/.test(q))kind='timer';
  else if(/\b(calculator app|make a calculator|build a calculator)\b/.test(q))kind='calculator';
  else if(/\b(dashboard|analytics page)\b/.test(q))kind='dashboard';
+ else if(/\b(quiz|trivia|multiple choice)\b/.test(q))kind='quiz';
  else if(/\b(clicker game|mini game)\b/.test(q))kind='game';
  else if(/\bportfolio\b/.test(q))kind='portfolio';
  else if(/\b(website|webpage|landing page|web app)\b/.test(q))kind='website';
