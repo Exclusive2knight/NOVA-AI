@@ -24,6 +24,10 @@ jobs:
         run: node tests/nova_native_checkpoint.cjs
       - name: Validate original model and memory Python code
         run: python3 -m py_compile training/train_nova.py training/infer_nova.py training/memory_index.py
+      - name: Check NOVA open-weight model training recipe syntax
+        run: python3 -m py_compile training/build_nova_sft.py training/finetune_open_model.py training/evaluate_nova_open_model.py training/test_open_sft.py
+      - name: Test rights-screened conversation tuning examples and held-out splits
+        run: python3 training/test_open_sft.py
       - name: Verify NOVA training pipeline syntax
         run: python3 -m py_compile training/prepare_corpus.py training/synthetic_dialogue.py training/prepare_preferences.py training/constitutional_review.py training/pretrain.py training/train_preferences.py training/test_pipeline.py training/train_starter_pack.py
       - name: Test licensing, data splits, synthetic conversations, consent and alignment review
