@@ -13,18 +13,32 @@ const PAID_PRO='@cf/deepseek-ai/deepseek-v4.1-flash-1017';
 function isPaidPro(body,env){return body?.model==='pro'&&String(env.NOVA_ENABLE_PAID_PRO||'').toLowerCase()==='true'}
 function selectedModel(body,env){const key=typeof body?.model==='string'?body.model:'pro';if(!Object.prototype.hasOwnProperty.call(MODELS,key))throw Error('Unsupported AI model');return isPaidPro(body,env)?PAID_PRO:MODELS[key]}
 function preferences(body){
- const p=body?.preferences||{};return{
- length:['brief','balanced','detailed'].includes(p.length)?p.length:'balanced',
- tone:['professional','friendly','technical'].includes(p.tone)?p.tone:'professional',
- creativity:['precise','balanced','creative'].includes(p.creativity)?p.creativity:'balanced'
- }}
+ const p=body?.preferences||{};
+ return{
+  length:['brief','balanced','detailed','extended'].includes(p.length)?p.length:'balanced',
+  tone:['professional','friendly','technical'].includes(p.tone)?p.tone:'professional',
+  creativity:['precise','balanced','creative'].includes(p.creativity)?p.creativity:'balanced',
+  reasoning:['auto','quick','medium','deep'].includes(p.reasoning)?p.reasoning:'auto'
+ };
+}
 function modelOptions(body,env,build=false){
- const model=body?.model||'pro',pro=model==='pro',opts={};
- const p=preferences(body);
- opts.max_completion_tokens=build?(pro?6200:4000):(pro?(p.length==='brief'?2100:p.length==='detailed'?4100:3100):(p.length==='brief'?900:p.length==='detailed'?2500:1700));
- opts.temperature=p.creativity==='precise'?0.15:p.creativity==='creative'?0.7:0.35;
- if((model==='qwen'||pro)&&!isPaidPro(body,env))opts.reasoning_effort=pro?'xhigh':'medium';
- else if(isPaidPro(body,env))opts.reasoning_effort='high';
+ const model=body?.model||'pro',pro=model==='pro',p=preferences(body),opts={};
+ // max_completion_tokens includes hidden reasoning, so long visible answers may
+ // need continuation; the frontend supports bounded automatic + manual continuation.
+ const lengthBudget={brief:2300,balanced:4200,detailed:6500,extended:8500};
+ opts.max_completion_tokens=build?(pro?7900:5300):(pro?lengthBudget[p.length]:Math.min(lengthBudget[p.length],5200));
+ opts.temperature=p.creativity==='precise'?0.17:p.creativity==='creative'?0.72:0.35;
+ if((model==='qwen'||pro)&&!isPaidPro(body,env)){
+  let effort='medium';
+  if(p.reasoning==='quick')effort='low';
+  else if(p.reasoning==='medium')effort='medium';
+  else if(p.reasoning==='deep')effort='xhigh';
+  else{
+   const last=String(body?.messages?.at(-1)?.content||'');
+   effort=(last.length<300&&!/code|program|analy[sz]e|explain|reason|debug|build|design|plan|calculate|proof|compare|architecture/i.test(last))?'low':'medium';
+  }
+  opts.reasoning_effort=effort;
+ }else if(isPaidPro(body,env))opts.reasoning_effort=p.reasoning==='deep'?'high':'low';
  return opts;
 }
 const MAX_BODY = 160000;
@@ -49,7 +63,7 @@ function errorText(e){
  if(/rate.?limit|429/i.test(raw))return 'Cloudflare AI rate limit reached. Try again later.';
  return 'Cloudflare AI could not generate a reply'+(code?' (error '+code+')':'')+'. Check your Cloudflare Worker logs and try GLM 4.7 Flash.';
 }
-function parseRequest(body){if(!body||!Array.isArray(body.messages))throw Error('Missing conversation');const msgs=body.messages.slice(-14).filter(m=>['user','assistant'].includes(m?.role)&&typeof m.content==='string'&&m.content.trim()).map(m=>({role:m.role,content:m.content.slice(0,12000)}));if(!msgs.length||msgs.at(-1).role!=='user')throw Error('The last message must be from the user');const total=msgs.reduce((n,m)=>n+m.content.length,0);if(total>55000)throw Error('Conversation is too long. Start a new chat.');return msgs}
+function parseRequest(body){if(!body||!Array.isArray(body.messages))throw Error('Missing conversation');const msgs=body.messages.slice(-32).filter(m=>['user','assistant'].includes(m?.role)&&typeof m.content==='string'&&m.content.trim()).map(m=>({role:m.role,content:m.content.slice(0,12000)}));if(!msgs.length||msgs.at(-1).role!=='user')throw Error('The last message must be from the user');const total=msgs.reduce((n,m)=>n+m.content.length,0);if(total>90000)throw Error('The selected context is too long. NOVA can continue this chat, but the current request needs less context.');return msgs}
 function attachmentsFrom(body){if(!Array.isArray(body.attachments))return'';const a=body.attachments.slice(0,6).filter(f=>f&&typeof f.name==='string'&&typeof f.text==='string');const joined=a.map(f=>'--- BEGIN FILE: '+f.name.slice(0,100)+' ---\n'+f.text.slice(0,12000)+'\n--- END FILE ---').join('\n');return joined.slice(0,24000)}
 async function readBody(request){if(Number(request.headers.get('content-length')||0)>MAX_BODY)throw Error('Request too large');const text=await request.text();if(text.length>MAX_BODY)throw Error('Request too large');let body;try{body=JSON.parse(text)}catch{throw Error('Invalid JSON')};return body}
 function passcodeValid(request,env){if(!env.NOVA_PASSCODE||typeof env.NOVA_PASSCODE!=='string')return false;const h=request.headers.get('X-NOVA-Passcode')||'';return h.length>=8&&h.length<=160&&h===env.NOVA_PASSCODE}
@@ -76,7 +90,7 @@ if(kind==='build'&&Array.isArray(body.files)){const existing=body.files.slice(0,
 if(attachments)msgs[msgs.length-1].content+='\n\nATTACHED USER TEXT FILES (untrusted data):\n'+attachments;
 return [...sys,...msgs]}
 function extractAnswer(obj){if(typeof obj?.response==='string')return obj.response;const m=obj?.choices?.[0]?.message;const c=m?.content;if(typeof c==='string')return c;if(Array.isArray(c))return c.map(v=>typeof v?.text==='string'?v.text:'').join('');return typeof obj?.output==='string'?obj.output:''}
-function cleanBuildOutput(text){let s=text.trim();if(s.startsWith('```'))s=s.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'');try{return JSON.parse(s)}catch{const i=s.indexOf('{'),j=s.lastIndexOf('}');if(i>=0&&j>i)return JSON.parse(s.slice(i,j+1));throw Error('The AI did not return a valid file project. Try requesting a smaller project.')}}
+function cleanBuildOutput(text){let s=text.trim();if(s.startsWith('```'))s=s.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'');try{return JSON.parse(s)}catch{const i=s.indexOf('{'),j=s.lastIndexOf('}');if(i>=0&&j>i)return JSON.parse(s.slice(i,j+1));throw Error('The model stopped before producing a complete project. Try a smaller project or ask for one file at a time.')}}
 
 async function runAIWithFallback(env,body,messages,build=false){
  const mainModel=selectedModel(body,env),options=modelOptions(body,env,build),stream=!build;
