@@ -27,6 +27,7 @@ async function fakeFetch(url,opts={}){
  if(address.includes('/w/rest.php/v1/search/page'))return new Response(JSON.stringify({pages:[
    {title:'Electric vehicle',description:'An electrically powered vehicle'}
  ]}),{status:200,headers:{'Content-Type':'application/json'}});
+ if(address.includes('api.tavily.com/extract'))return new Response(JSON.stringify({results:[{url:'https://example.com/review',raw_content:'This review discusses electric vehicles and their features in detail.'}]}),{status:200,headers:{'Content-Type':'application/json'}});
  if(address.includes('api.tavily.com'))return new Response(JSON.stringify({results:[
    {title:'Public information',url:'https://example.org/reference',content:'A sample excerpt'}
  ]}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -135,6 +136,25 @@ async function test(){
  assert.equal(status.searchProvider,'brave');
  assert.equal(status.webSearchRequiresPasscode,true);
  assert.equal(online.cleanSources(brave.sources).length,2);
+ assert(online.shouldSearch('Summarize https://example.com/review',null,{enabled:true}),
+  'Explicitly reading a webpage should use online research');
+ const pageCallStart=calls.length;
+ response=await worker.fetch(req('Summarize https://example.com/review','https://exclusive2knight.github.io','owner-passcode-123'),{
+  TAVILY_API_KEY:'demo',NOVA_PASSCODE:'owner-passcode-123'
+ });
+ assert.equal(response.status,200,'Authorized owner should be able to extract a public webpage');
+ const extracted=await response.json();
+ assert.equal(extracted.provider,'web');
+ assert(extracted.sources[0].content.includes('This review discusses'));
+ assert(calls.slice(pageCallStart).some(call=>call.address==='https://api.tavily.com/extract'),
+  'Explicitly requested page should use fixed-host Tavily extraction');
+ const privateStart=calls.length;
+ response=await worker.fetch(req('Summarize https://127.0.0.1/secrets','https://exclusive2knight.github.io','owner-passcode-123'),{
+  TAVILY_API_KEY:'demo',NOVA_PASSCODE:'owner-passcode-123'
+ });
+ assert.equal(response.status,200);
+ assert(calls.slice(privateStart).every(call=>call.address!=='https://api.tavily.com/extract'),
+  'Never extract private network URLs');
 
 
  assert(html.includes('<script src="./nova-online.js"></script>'));
