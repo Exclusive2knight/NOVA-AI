@@ -87,6 +87,14 @@ function hintCategory(text){
 }
 function respond(native,prompt,opts={}){
  const {enabled=true,onStep,build=false}=opts;
+ const casual=String(prompt||'').trim().toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+ const small=casual.match(/^how (?:are|ar|r) (we|wi|with|you|u) (?:doing|doin|ding)(?: today)?$/);
+ if(small){
+  const normalized='how are '+(['you','u'].includes(small[1])?'you':'we')+' doing';
+  if(onStep&&normalized!==casual)onStep({type:'language',label:'Interpreted conversation typo as: '+normalized});
+  const result=native.respond(normalized,{build:false,onStep});
+  return {...result,interpretation:normalized!==casual?normalized:undefined};
+ }
  if(!enabled){
   const key=global.NOVASkills?.recognize(prompt);
   const creating=build||/\b(build|make|create|design|generate|give me|put together|set up|mock up|want a|need a)\b/i.test(String(prompt));
