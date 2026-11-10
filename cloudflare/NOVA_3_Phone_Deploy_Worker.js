@@ -233,6 +233,30 @@ async function handleCloudMemory(request,env){
    ).all();
    return responseJSON({memories:rows.results||[]});
   }
+  if(action==='edit'){
+   const id=String(body?.id||'');
+   const content=String(body?.text||'').trim();
+   if(!/^[a-f0-9-]{36}$/i.test(id))return responseJSON({error:'Invalid memory ID'},400);
+   if(!content||content.length>4500)return responseJSON({error:'Memory must contain 1–4500 characters'},400);
+   if(/\b(?:password|passcode|api[- ]?key|private key|access token|bearer token|recovery code|credit card|bank account|social security|ssn|medical record)\b/i.test(content))
+     return responseJSON({error:'Memory may contain sensitive information.'},400);
+   const found=await db.prepare('SELECT id FROM nova_memories WHERE id=? LIMIT 1').bind(id).first();
+   if(!found)return responseJSON({error:'Memory was not found'},404);
+   await db.prepare('UPDATE nova_memories SET body=? WHERE id=?').bind(content,id).run();
+   return responseJSON({updated:true,id});
+  }
+  if(action==='export'){
+   // Keyset paging lets the owner back up memory without loading the full database.
+   const after=Number(body?.after||0);
+   if(!Number.isSafeInteger(after)||after<0)return responseJSON({error:'Invalid cursor'},400);
+   const rows=await db.prepare(
+     'SELECT rowid AS cursor,id,source,created_at,body AS text FROM nova_memories WHERE rowid>? ORDER BY rowid LIMIT 201'
+   ).bind(after).all();
+   const records=rows.results||[];
+   const hasMore=records.length>200;
+   const exported=records.slice(0,200);
+   return responseJSON({memories:exported,next:hasMore?Number(exported.at(-1)?.cursor||0):null});
+  }
   if(action==='delete'){
    const id=String(body?.id||'');
    if(!/^[a-f0-9-]{36}$/i.test(id))return responseJSON({error:'Invalid memory ID'},400);
