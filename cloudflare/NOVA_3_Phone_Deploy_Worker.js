@@ -368,6 +368,44 @@ async function handleChat(request,env,body){
  });
  return new Response(output,{headers:{...commonHeaders,'Content-Type':'text/event-stream; charset=utf-8','X-Accel-Buffering':'no','Connection':'keep-alive'}});
 }
+// Optional AI-planned 3D geometry. Returns only a bounded, validated list of
+// primitive parts; user browser builds the GLB from this safe data. Not a 3D
+// generative mesh model or a replacement for Blender.
+async function handle3DPlan(request,env){
+ const size=Number(request.headers.get('content-length')||0);
+ if(size>5000)return responseJSON({error:'3D request too large.'},413);
+ let body;
+ try{const raw=await request.text();if(raw.length>5000)return responseJSON({error:'3D request too large.'},413);body=JSON.parse(raw)}
+ catch{return responseJSON({error:'Invalid 3D plan request.'},400)}
+ const prompt=String(body?.prompt||'').trim();
+ if(!prompt||prompt.length>1600)return responseJSON({error:'Describe an asset in 1–1,600 characters.'},400);
+ const kind=['vehicle','building','garage','tree','character','prop'].includes(body?.kind)?body.kind:'prop';
+ const system='You design a simplified, original 3D game asset using ONLY primitive meshes. Return ONLY valid JSON with this schema: {"parts":[{"name":"Part name","shape":"box","material":"paint","translation":[0,1,0],"scale":[1,1,1]}]}. Shape must be box, cylinder or sphere. Materials must be one of paint, trim, glass, highlight, light, tire, concrete, wood, foliage, skin. Coordinates in meters, Y is up, forward direction is -Z. Every dimension scale must be positive. List 6 to 45 meaningful parts to describe a coherent '+kind+'; e.g. vehicle body, cabin, wheels, windows. Avoid copyrighted logos, unsafe or explicit content, elaborate text or any code. IMPORTANT: no markdown and no additional keys.';
+ try{
+  const result=await verifiedProResponse(env,{model:'pro',preferences:{length:'extended',reasoning:'quick',creativity:'balanced'}},[
+   {role:'system',content:system},
+   {role:'user',content:'Design a stylized starter 3D asset for: '+prompt}
+  ],false);
+  const obj=cleanBuildOutput(result.content);
+  const materials=new Set(['paint','trim','glass','highlight','light','tire','concrete','wood','foliage','skin']);
+  const cleaned=[];
+  for(const p of (Array.isArray(obj?.parts)?obj.parts:[]).slice(0,65)){
+   if(!p||!['box','cylinder','sphere'].includes(p.shape)||!materials.has(p.material))continue;
+   const t=p.translation,scale=p.scale;
+   if(!Array.isArray(t)||!Array.isArray(scale)||t.length!==3||scale.length!==3)continue;
+   const vals=[...t,...scale].map(Number);
+   if(vals.some(v=>!Number.isFinite(v)||Math.abs(v)>80)||vals.slice(3).some(v=>v<.025))continue;
+   cleaned.push({name:String(p.name||p.shape).slice(0,65),shape:p.shape,material:p.material,
+     translation:vals.slice(0,3),scale:vals.slice(3,6)});
+  }
+  if(cleaned.length<3)return responseJSON({error:'AI could not produce a usable 3D part layout. Try a simpler description.'},422);
+  return responseJSON({parts:cleaned,model:result.label,notes:'Approximate, AI-arranged primitive geometry. Review in Blender.'});
+ }catch(error){
+  if(isQuotaProblem(error))return responseJSON({error:'Cloudflare AI quota reached. Switch off AI planning to generate an offline GLB instead.'},429);
+  console.error('NOVA model planning failed',{code:aiErrorCode(error)||'unknown'});
+  return responseJSON({error:'Custom AI geometry planning is unavailable. Use standard offline GLB mode instead.'},502);
+ }
+}
 // On-demand user-initiated image generation. Powered by Cloudflare's hosted
 // FLUX.1 schnell model, not NOVA's tiny original intent classifier.
 // No image files are persisted on this Worker or automatically added to D1.
@@ -463,7 +501,8 @@ if(path==='/api/native-search'&&request.method==='POST'){
  if(!allowedOrigin(request))return responseJSON({error:'Origin not allowed'},403);
  return handleNativeSearch(request,env);
 }
-if(path.startsWith('/api/')){if(!['/api/chat','/api/build','/api/diagnose','/api/vision','/api/image'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{if(path==='/api/image')return await handleGenerateImage(request,env);
+if(path.startsWith('/api/')){if(!['/api/chat','/api/build','/api/diagnose','/api/vision','/api/image','/api/3d-plan'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{if(path==='/api/3d-plan')return await handle3DPlan(request,env);
+ if(path==='/api/image')return await handleGenerateImage(request,env);
  if(path==='/api/vision')return await handleVision(request,env);
  if(path==='/api/diagnose'){
  const minimal={model:'pro',preferences:{length:'brief',reasoning:'quick',creativity:'precise'},messages:[{role:'user',content:'Reply with the single word READY.'}]};
