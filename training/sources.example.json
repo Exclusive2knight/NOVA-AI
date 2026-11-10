@@ -1,0 +1,32 @@
+{
+  "sources": [
+    {
+      "id": "nova-1",
+      "path": "examples.jsonl",
+      "license": "user-authored",
+      "source_url": "repo://training/examples.jsonl",
+      "training_allowed": true
+    },
+    {
+      "id": "nova-2",
+      "path": "native_concepts.txt",
+      "license": "user-authored",
+      "source_url": "repo://training/native_concepts.txt",
+      "training_allowed": true
+    },
+    {
+      "id": "nova-8",
+      "path": "native_evaluation_a.txt",
+      "license": "user-authored",
+      "source_url": "repo://training/native_evaluation_a.txt",
+      "training_allowed": true
+    },
+    {
+      "id": "nova-9",
+      "path": "native_evaluation_b.txt",
+      "license": "user-authored",
+      "source_url": "repo://training/native_evaluation_b.txt",
+      "training_allowed": true
+    }
+  ]
+}
