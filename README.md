@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **Stronger pretrained model update:** NOVA Pro already selects **Qwen3.8-27B** in the Worker code, with an optional, owner-controlled paid DeepSeek V4.1 Flash path. [See verified model choices](training/NOVA_STRONG_MODEL_CHOICE.md). A [Qwen3-8B 4-bit LoRA training notebook](training/NOVA_Strong_8B_QLoRA_Colab.ipynb) is also available for custom GPU fine-tuning. No extra paid service was activated and no new GPU training has run by adding the notebook.
+
 > **Training update (November 10, 2026):** NOVA Core was trained for **6,000 additional CPU steps**, totaling **23,000**. Same-split held-out synthetic test loss decreased **2.378%** compared with 17,000 steps. Sample generations are still incoherent, and the checkpoint has not been deployed. [Read the measured results](training/NOVA_CORE_ROUND10_RESULTS.md).
 
 > **NOVA Core training update:** 5,200 more CPU training steps completed, now **17,000 cumulative steps**. Held-out synthetic test loss fell **4.169%** versus the 11,800-step checkpoint; sample responses remain incoherent. [Read the verified evaluation](training/NOVA_CORE_ROUND8_RESULTS.md). These model weights are not deployed to the website.
