@@ -12,3 +12,12 @@ __pycache__/
 .env
 .env.*
 !*.example
+
+# Keep private training corpora, synthetic exports and user feedback local
+nova-training-data/
+nova-data/
+private-training/
+training/output/
+training/checkpoints/
+*feedback*.private.jsonl
+*preferences*.private.jsonl
