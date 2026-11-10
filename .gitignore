@@ -21,3 +21,6 @@ training/output/
 training/checkpoints/
 *feedback*.private.jsonl
 *preferences*.private.jsonl
+
+# Generated only in GitHub Actions or local deployment checks
+wrangler.ci.json
