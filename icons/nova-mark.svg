@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NOVA">
+<rect width="512" height="512" rx="112" fill="#101b2b"/>
+<path d="M132 359V153h58l132 152V153h58v206h-58L190 207v152z" fill="#f4f7fc"/>
+<rect x="126" y="384" width="258" height="10" rx="5" fill="#5e9cf7"/>
+</svg>
