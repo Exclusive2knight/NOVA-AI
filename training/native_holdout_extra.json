@@ -1,0 +1,141 @@
+{
+  "description": "Second independent manually authored evaluation set, no training examples included",
+  "items": [
+    {
+      "intent": "greeting",
+      "prompt": "hiya, hope your day is well"
+    },
+    {
+      "intent": "greeting",
+      "prompt": "what's the news with you"
+    },
+    {
+      "intent": "website",
+      "prompt": "could you mock up a webpage for a dentist office"
+    },
+    {
+      "intent": "website",
+      "prompt": "set up an online presence for my bakery"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "i want a photography gallery of my favorite work"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "a site that presents my resume and skills"
+    },
+    {
+      "intent": "todo",
+      "prompt": "I want to tick off my homework as I finish it"
+    },
+    {
+      "intent": "todo",
+      "prompt": "organize a list of chores to check off"
+    },
+    {
+      "intent": "notes",
+      "prompt": "give me a blank journal I can type into"
+    },
+    {
+      "intent": "notes",
+      "prompt": "I need somewhere to scribble a memo"
+    },
+    {
+      "intent": "timer",
+      "prompt": "create a countdown for my study break"
+    },
+    {
+      "intent": "timer",
+      "prompt": "show seconds ticking down to zero"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "an app with digits and arithmetic operations"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "a handheld number-crunching interface"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "test me with a few questions about space"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "make a trivia challenge with choices"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "I want an overview of monthly traffic figures"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "a metrics screen with graphs for my team"
+    },
+    {
+      "intent": "game",
+      "prompt": "a score based game where you tap quickly"
+    },
+    {
+      "intent": "game",
+      "prompt": "a little browser arcade to play"
+    },
+    {
+      "intent": "math",
+      "prompt": "work out 13 times 7"
+    },
+    {
+      "intent": "math",
+      "prompt": "how much is 81 divided by nine"
+    },
+    {
+      "intent": "summary",
+      "prompt": "can you shorten the article into a few sentences"
+    },
+    {
+      "intent": "summary",
+      "prompt": "extract the main idea from these paragraphs"
+    },
+    {
+      "intent": "explain",
+      "prompt": "walk me through how promises work in JS"
+    },
+    {
+      "intent": "explain",
+      "prompt": "could you clarify what an array is"
+    },
+    {
+      "intent": "creative",
+      "prompt": "come up with names for a fictional spaceship"
+    },
+    {
+      "intent": "creative",
+      "prompt": "I need a plot for a fantasy story"
+    },
+    {
+      "intent": "code",
+      "prompt": "write a Python function to sort a list"
+    },
+    {
+      "intent": "code",
+      "prompt": "help me fix a bug in some CSS"
+    },
+    {
+      "intent": "memory",
+      "prompt": "store this instruction to use later"
+    },
+    {
+      "intent": "memory",
+      "prompt": "recall the things I've taught this model"
+    },
+    {
+      "intent": "general",
+      "prompt": "what should I expect from your abilities"
+    },
+    {
+      "intent": "general",
+      "prompt": "what are you designed to do"
+    }
+  ]
+}
