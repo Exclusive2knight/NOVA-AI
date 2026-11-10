@@ -1,0 +1,26 @@
+/* Offline static project diagnostics; no generated code is executed. */
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const source=fs.readFileSync(path.join(root,'nova-project-check.js'),'utf8');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const win={};
+new Function('window',source)(win);
+const inspect=win.NOVAProjectCheck.inspect;
+let result=inspect({'index.html':'<!doctype html><html><head><title>Working</title><link rel="stylesheet" href="styles.css"></head><body><button id="go">Start</button><script src="app.js"></script></body></html>','styles.css':'body{margin:0}','app.js':'document.getElementById("go").onclick=()=>{}'});
+assert.equal(result.errors,0);assert.equal(result.warnings,0);
+result=inspect({'index.html':'<html><head><title>Test</title><link rel="stylesheet" href="style.css"></head><body><div id="one"></div><div id="one"></div><script src="app.js"></script><script>document.getElementById("none");</script></body></html>'});
+assert(result.issues.some(x=>x.message.includes('Missing local stylesheet: style.css')));
+assert(result.issues.some(x=>x.message.includes('Missing local script: app.js')));
+assert(result.issues.some(x=>x.message.includes('Duplicate element id: one')));
+assert(result.issues.some(x=>x.message.includes('missing element id: none')));
+result=inspect({'index.html':'<html><head><title>External</title><script src="https://example.com/a.js"></script></head><body></body></html>'});
+assert.equal(result.errors,0,'External dependencies are not local project missing files');
+result=inspect({});
+assert.equal(result.errors,1,'Missing entrypoint should be detected');
+assert(html.includes('id="artifactCheck"'),'Check code button missing');
+assert(html.includes('window.NOVAProjectCheck?.inspect'),'Static checker must be wired to NOVA');
+assert(html.includes('id="artifactFixErrors"'),'Static issues should support the reviewed repair workflow');
+assert(html.includes('<script src="./nova-project-check.js"></script>'),'Project checker must be loaded');
+console.log('NOVA project checker: missing assets, duplicate IDs, missing entrypoints and safe lint UI PASSED');
