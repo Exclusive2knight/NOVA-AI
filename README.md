@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **Cloudflare auto-deployment and phone cache fixes:** To connect the GitHub repo to the actual NOVA Worker once, follow [Cloudflare automatic deployment setup](CLOUDFLARE_AUTO_DEPLOY_SETUP.md). GitHub Pages and the Worker are separate; the Web and cloud-memory UI may appear before the cloud service is deployed.
+
 > **New owner-controlled capabilities:** Cloud-memory correction and JSON export, optional Cloudflare image analysis, offline HTML/CSS/JS checks, and manual NOVA Pro answer review. [Read the setup and limits](NOVA_CAPABILITIES_RELEASE_2026-11-10.md). Deployment and owner configuration still required for Cloudflare features.
 
 > **November 10, 2026 upgrade:** NOVA now has an explicit **✦ Pro** shortcut for hosted conversational AI, selective opt-in off-device Cloudflare D1 memory, on-demand Tavily extraction for user-requested public webpages, and sandboxed JavaScript preview error reporting with a user-reviewed **✦ Fix errors** workflow. [Read the complete upgrade and setup guide](NOVA_UPGRADE_GUIDE.md). These GitHub changes need Cloudflare deployment and credentials/bindings for hosted features; the original NOVA neural model has not become frontier-class.
