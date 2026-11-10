@@ -368,6 +368,42 @@ async function handleChat(request,env,body){
  });
  return new Response(output,{headers:{...commonHeaders,'Content-Type':'text/event-stream; charset=utf-8','X-Accel-Buffering':'no','Connection':'keep-alive'}});
 }
+// On-demand user-initiated image generation. Powered by Cloudflare's hosted
+// FLUX.1 schnell model, not NOVA's tiny original intent classifier.
+// No image files are persisted on this Worker or automatically added to D1.
+async function handleGenerateImage(request,env){
+ const size=Number(request.headers.get('content-length')||0);
+ if(size>5000)return responseJSON({error:'Image prompt is too large.'},413);
+ let body;
+ try{const raw=await request.text();if(raw.length>5000)return responseJSON({error:'Image prompt is too large.'},413);body=JSON.parse(raw)}
+ catch{return responseJSON({error:'Invalid image generation request.'},400)}
+ const raw=String(body?.prompt||'').trim();
+ if(!raw||raw.length>1800)return responseJSON({error:'Describe an image in 1–1,800 characters.'},400);
+ const styles={
+  realistic:'Photorealistic, physically plausible materials, thoughtful lighting, precise details',
+  concept:'Professional concept art, strong silhouettes, polished production design',
+  cinematic:'Cinematic composition, detailed lighting, sharp foreground, atmospheric scene',
+  cartoon:'Illustrated cartoon style, clean shapes, lively bright colors',
+  blueprint:'Technical design concept sheet, crisp orthographic presentation, neutral background',
+  game:'High-quality game asset preview render, clean 3D materials, sharp edges'
+ };
+ const style=Object.hasOwn(styles,body?.style)?body.style:'realistic';
+ const ratio=['square','wide','portrait'].includes(body?.ratio)?body.ratio:'square';
+ const guidance=ratio==='wide'?'Wide landscape composition.':ratio==='portrait'?'Tall vertical composition.':'Centered square composition.';
+ const prompt=(raw+'\nStyle guidance: '+styles[style]+'. '+guidance).slice(0,2048);
+ try{
+  const generated=await env.AI.run('@cf/black-forest-labs/flux-1-schnell',{prompt,steps:4});
+  const encoded=String(generated?.image||'');
+  if(encoded.length<100||encoded.length>6000000||!/^[a-zA-Z0-9+/]+={0,2}$/.test(encoded))
+   throw Error('Cloudflare did not produce a usable image');
+  return responseJSON({image:'data:image/jpeg;base64,'+encoded,mime:'image/jpeg',
+    model:'FLUX.1 schnell',note:'Generated image. Wide and portrait exports are centered crops of the source image.'});
+ }catch(error){
+  if(isQuotaProblem(error))return responseJSON({error:'Cloudflare Workers AI free allowance is exhausted. Try after your quota resets.'},429);
+  console.error('NOVA image generation failed',{code:aiErrorCode(error)||'unknown'});
+  return responseJSON({error:'Image generation is unavailable on this Cloudflare account or Worker. Check the AI binding and model access.'},502);
+ }
+}
 // User-initiated vision analysis. Images are never added to D1 memory;
 // bytes go only to the explicitly selected Cloudflare Workers AI model.
 async function handleVision(request,env){
@@ -427,7 +463,8 @@ if(path==='/api/native-search'&&request.method==='POST'){
  if(!allowedOrigin(request))return responseJSON({error:'Origin not allowed'},403);
  return handleNativeSearch(request,env);
 }
-if(path.startsWith('/api/')){if(!['/api/chat','/api/build','/api/diagnose','/api/vision'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{if(path==='/api/vision')return await handleVision(request,env);
+if(path.startsWith('/api/')){if(!['/api/chat','/api/build','/api/diagnose','/api/vision','/api/image'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{if(path==='/api/image')return await handleGenerateImage(request,env);
+ if(path==='/api/vision')return await handleVision(request,env);
  if(path==='/api/diagnose'){
  const minimal={model:'pro',preferences:{length:'brief',reasoning:'quick',creativity:'precise'},messages:[{role:'user',content:'Reply with the single word READY.'}]};
  const tested=await verifiedProResponse(env,minimal,[{role:'system',content:'Reply with READY.'},{role:'user',content:'Confirm the connection.'}],false);
