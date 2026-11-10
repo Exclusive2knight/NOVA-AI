@@ -114,6 +114,9 @@
 <input id="backendUrl" type="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://nova-ai-workshop.example.workers.dev">
 <p class="help">After deploying NOVA's Cloudflare Worker, paste its full <code>https://…workers.dev</code> URL here. This GitHub Pages website stays your main address. Only enter the Worker URL you created.</p>
 <button id="testBackend" class="settings-soft" type="button">Test AI server connection</button>
+<button id="testPro" class="settings-soft" type="button">Run NOVA Pro diagnostic</button>
+<p class="help">This makes one short live AI test (and may retry on another model). It uses a small amount of your Cloudflare AI allowance.</p>
+<div id="proDiagnosticResult" class="help" role="status" aria-live="polite">Pro test not run on this device.</div>
 <div class="label-row"><label for="passcode">Private website passcode</label><span>Stored on this device only</span></div><input id="passcode" type="password" autocomplete="off" placeholder="Set after deploying"><p class="help">Deploy the Worker, then create a <code>NOVA_PASSCODE</code> secret with the same value. This helps stop strangers using your free AI quota.</p><div class="setup-box"><strong>Installation &amp; original models</strong>
 <p class="help">On iPhone: open in Safari, tap Share, then “Add to Home Screen.” On Android or desktop: use the browser’s Install app option. The offline workspace works without a server; live hosted models need Cloudflare deployment.</p>
 <button id="installInSettings" type="button" class="mini-button">Install / How to install</button>
@@ -529,11 +532,34 @@ function init(){ensureChat();setTheme();populateVoices();window.speechSynthesis?
     if(!r.ok)throw new Error('Status '+r.status);
     const d=await r.json();
     label.textContent=d.ai&&d.passcodeProtected?'AI server detected · AI and passcode are configured':d.ai?'Worker online · set NOVA_PASSCODE in Cloudflare':'Worker reachable · AI binding not set';
-    notice('Connection test completed');
+    if(d.release!=='nova-pro-reliability-v1')label.textContent+=' · Worker update not confirmed';else label.textContent+=' · Pro reliability update installed';notice('Connection test completed');
   }catch(e){
     label.textContent='Could not reach the NOVA AI Worker: '+String(e.message);
     notice('Check the Worker URL, deployment, or browser network access');
   }
+ });
+ $('testPro').addEventListener('click',async()=>{
+ const out=$('proDiagnosticResult'),button=$('testPro'),password=$('passcode').value;
+ let url;
+ try{url=parseBackendUrl($('backendUrl').value)}
+ catch(e){out.textContent=e.message;return}
+ if(password.length<8){out.textContent='Enter the same private NOVA_PASSCODE saved in Cloudflare above, then test again.';return}
+ if(!url){out.textContent='Enter the Cloudflare Workers URL first.';return}
+ button.disabled=true;out.textContent='Testing real NOVA Pro generation…';
+ try{
+  const result=await fetch(url+'/api/diagnose',{
+   method:'POST',
+   headers:{'Content-Type':'application/json','X-NOVA-Passcode':password},
+   body:'{}',
+   cache:'no-store',
+   signal:AbortSignal.timeout(45000)
+  });
+  let data={};try{data=await result.json()}catch(e){}
+  if(result.status===404){out.textContent='The current Cloudflare deployment is outdated. Redeploy the latest main branch, then test again.';return}
+  if(!result.ok){out.textContent='Pro failed: '+(data.error||'HTTP '+result.status)+'. Check Cloudflare Workers AI usage and deployment logs.';return}
+  out.textContent='Pro working · '+(data.model||'Hosted AI')+(data.usedFallback?' (backup model)':'')+' · '+(data.release||'release unknown');
+ }catch(e){out.textContent='Could not complete Pro test: '+(e.name==='TimeoutError'?'Timed out after 45 seconds':e.message)+'. Check your Worker deployment and logs.'}
+ finally{button.disabled=false}
  });
  $('usageOpen').addEventListener('click',()=>{renderUsage();$('usageDialog').showModal()});
  $('drawerUsageOpen').addEventListener('click',()=>{setDrawer(false);renderUsage();$('usageDialog').showModal()});
