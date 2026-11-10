@@ -12,6 +12,20 @@ NOVA now prepopulates its Cloudflare backend URL with your known Worker address 
 
 The GitHub Pages website is already deployed. It provides NOVA's chat UI, local files, experimental NOVA Tiny, and installation as a PWA. GitHub Pages itself cannot run the hosted AI. The server script is available in this repository at `cloudflare/NOVA_3_Phone_Deploy_Worker.js`, and the frontend has a Settings field for the Worker's URL.
 
+## If Cloudflare says "Bindings cannot be added to a Worker that only has static assets"
+
+This means **the uploaded Worker is static-only and NOVA's JavaScript server has not been deployed**. It is not a missing second Worker or a missing Service binding.
+
+NOVA now includes **both**:
+- Root `wrangler.jsonc`: use if Cloudflare **Settings → Builds → Root directory** is empty or `/` (repository root)
+- `cloudflare/wrangler.jsonc`: use if the Root directory is `cloudflare`
+
+Both target the existing **nova-ai** Worker, include the JavaScript entry point, and declare the `AI` binding. For the GitHub integration, make sure **Deploy command** is `npx wrangler deploy` and **Build command** is blank. Save the build settings and trigger/retry a **production deployment** from the latest `main` commit. Wait for the deployment to show **success**, then reload **Settings → Bindings**. Cloudflare should no longer say static-only. The `AI` binding can also be created automatically from `wrangler.jsonc`.
+
+Only after the real Worker deployment succeeds can you set `NOVA_PASSCODE` under **Settings → Variables and Secrets**. Keep the passcode private. The binding name should be `AI`, not a Service binding or another Worker.
+
+If the build still publishes static assets, open **Deployments → latest deployment → Build logs** and inspect the command it executed. Check that Cloudflare is linked to the correct repository and branch and is actually using the Wrangler configuration. Static-only projects cannot accept runtime variables or bindings.
+
 ## Part A — Deploy your AI server on Cloudflare (laptop)
 
 You only need to do this once, using a Cloudflare account eligible to use Workers AI. **Do not put passwords, API keys, or credit card details in GitHub or ChatGPT.**
