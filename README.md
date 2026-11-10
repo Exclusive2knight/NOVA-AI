@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **NEW free reasoning option:** **NOVA Strong Free (GPT-OSS 120B)** is selectable from the model menu or **✦ Strong** shortcut. It runs on Cloudflare's existing free Workers AI daily allocation, with Qwen3.8 fallback and no paid-model retry. [Read setup and limits](NOVA_STRONG_FREE_MODEL.md). Requires the latest Cloudflare Worker deployment; GitHub code alone does not activate it.
+
 > **Stronger pretrained model update:** NOVA Pro already selects **Qwen3.8-27B** in the Worker code, with an optional, owner-controlled paid DeepSeek V4.1 Flash path. [See verified model choices](training/NOVA_STRONG_MODEL_CHOICE.md). A [Qwen3-8B 4-bit LoRA training notebook](training/NOVA_Strong_8B_QLoRA_Colab.ipynb) is also available for custom GPU fine-tuning. No extra paid service was activated and no new GPU training has run by adding the notebook.
 
 > **Training update (November 10, 2026):** NOVA Core was trained for **6,000 additional CPU steps**, totaling **23,000**. Same-split held-out synthetic test loss decreased **2.378%** compared with 17,000 steps. Sample generations are still incoherent, and the checkpoint has not been deployed. [Read the measured results](training/NOVA_CORE_ROUND10_RESULTS.md).
