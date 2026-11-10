@@ -35,6 +35,8 @@ try{
   assert.equal(config.name,'nova-ai');
   assert.equal(config.main,'cloudflare/NOVA_3_Phone_Deploy_Worker.js');
   assert.equal(config.ai.binding,'AI');
+  assert.equal(config.keep_vars,true,'Cloudflare dashboard variables must persist across deployments');
+  assert.deepEqual(config.secrets.required,['NOVA_PASSCODE'],'Owner passcode must be configured before deployment');
   assert.equal(config.d1_databases.length,1);
   assert.deepEqual(config.d1_databases[0],{
     binding:'NOVA_MEMORY',database_name:'nova-memory',database_id:sample,
