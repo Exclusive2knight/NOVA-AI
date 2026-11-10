@@ -2,19 +2,20 @@
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
 
-## NOVA Native — our own offline AI (new)
+## NOVA Native 2 — our own trained offline AI
 
-**NOVA Native** is the default model for new launches. It is our original, on-device neural network trained from scratch. It has **10,097 parameters** and recognizes 17 task categories. It uses deterministic local skills to respond and generate editable starter websites and mini apps; no Cloudflare, passcode, GPU, or hosted model is required. This is **not** a frontier or general-purpose language model, and its output is intentionally limited to supported tasks.
+**NOVA Native 2.0** is our original on-device neural intent model with **50,033 trained parameters**, now loaded instantly from an approximately **131 KiB** compressed checkpoint in `nova-native-weights.js`. It recognizes 17 task categories and can route supported requests to local tools that create editable websites and mini-app artifacts—no Cloudflare request, paid API, or passcode required.
 
-Try `Build a website for a bakery`, `Make a to-do app`, `Create a timer`, or `What is 8 * 7?`. On the first use NOVA trains the weights in the browser; afterward it runs locally. The **Activity** disclosure shows actual local operations rather than invented shell commands or private reasoning. Your weights and custom training examples remain in that browser.
+**Independent intent-routing evaluations:** **58/68 (85.3%)** on one unseen test set and **24/34 (70.6%)** on a second. The first-generation Native 1.0 reached **14/68 (20.6%)** on the original test. These numbers assess *task recognition only*, not intelligence or open-ended response quality.
 
-To train additional examples: **Settings → Original NOVA Native model → Teach a new intent example**. Detailed architecture, tested features, limitations and roadmap: [NOVA Native documentation](training/NOVA_NATIVE.md). Automated offline tests run in GitHub Actions via `tests/nova_native.cjs`.
+The neural classifier is trained from scratch; the project templates and simple calculations are deterministic code, not neural text generation. NOVA Native is **not equivalent to Claude or a frontier language model**. It is a practical base for our own research and can be taught additional intent examples under Settings.
 
-Hosted NOVA Pro remains optional. The current native model is far smaller than Claude and has not been benchmarked as competitive with general-purpose models.
+Details: [NOVA Native model report](training/NOVA_NATIVE.md), [original model source](nova-native.js), [bundled trained weights](nova-native-weights.js), and [reproducible benchmark tests](tests/nova_native_checkpoint.cjs).
 
 ## What is in this repository?
 
 - `nova-native.js` — our own trainable browser neural-network model and local task tools.
+- `nova-native-weights.js` — bundled compressed weights trained on original NOVA examples, for immediate offline inference.
 - `index.html` — mobile-friendly **offline** NOVA workspace. This opens in a browser and supports local files, editing, previews and exports. It can call your connected Cloudflare Worker when the server URL and passcode are configured; otherwise it runs as an offline workspace.
 - `cloudflare/NOVA_3_Phone_Deploy_Worker.js` — **full online NOVA app and backend**, including an embedded website, chat APIs, AI and search integrations.
 - `cloudflare/wrangler.jsonc` — Cloudflare Worker deployment configuration with a Workers AI binding called `AI`.
