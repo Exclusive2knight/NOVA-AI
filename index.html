@@ -107,14 +107,14 @@
         <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat history">
           <div class="intro" id="intro"><div class="intro-icon"><img src="./icons/nova-mark.svg" alt=""></div><p class="eyebrow">NOVA STUDIO · CREATE / EXPLORE</p><h1>Turn an idea into<br><em>something real.</em></h1><p class="intro-text">A thoughtful workspace for conversations, code, and creative projects. For natural conversation and reasoning, tap ✦ Pro and connect Cloudflare AI. NOVA Native is a much smaller offline intent model for simple tasks.</p><div class="intro-subline"><span class="native-pill">◉ Original NOVA model</span><span class="native-pill">◇ Live Artifacts</span><span class="native-pill">↗ Works on your phone</span></div><div class="suggestions"><button data-suggest="Build a clean website for an electric car showroom">Build a website <span>↗</span></button><button data-suggest="Make a habit tracker app with checkboxes">Build a habit tracker <span>↗</span></button><button data-suggest="Create an interactive drawing pad with a color picker">Make a drawing app <span>↗</span></button><button data-suggest="Create a project Kanban board">Organize my projects <span>↗</span></button></div></div>
         </div>
-        <div class="composer-shell"><div id="activityLive" class="native-live" role="status" aria-live="polite" hidden></div><div id="conversationNotice" class="chat-resume-banner" hidden></div><div class="composer"><div class="attachment-list" id="attachmentList"></div><textarea id="messageInput" rows="1" placeholder="Message NOVA…" aria-label="Your message"></textarea><div class="compose-row"><div class="compose-tools"><button id="attachBtn" class="tool-button" aria-label="Attach text files" title="Attach text files">＋</button><button id="searchToggle" class="tool-button" aria-pressed="false" title="Search the web">⌕ <span>Web</span></button><button id="buildToggle" class="tool-button" aria-pressed="false" title="Generate editable project files">◇ <span>Build</span></button><button id="voiceButton" class="tool-button" title="Dictate message" aria-label="Talk to NOVA">🎙</button><button id="stopSpeech" class="tool-button" title="Stop NOVA speaking" aria-label="Stop speech">◼</button></div><button id="sendBtn" class="send-button" aria-label="Send message">↑</button></div></div><div class="under-composer" id="usageNote">Offline workspace ready · Connect Cloudflare AI in Settings for live answers.</div></div>
+        <div class="composer-shell"><div id="activityLive" class="native-live" role="status" aria-live="polite" hidden></div><div id="conversationNotice" class="chat-resume-banner" hidden></div><div class="composer"><div class="attachment-list" id="attachmentList"></div><textarea id="messageInput" rows="1" placeholder="Message NOVA…" aria-label="Your message"></textarea><div class="compose-row"><div class="compose-tools"><button id="attachBtn" class="tool-button" aria-label="Attach text files" title="Attach text files">＋</button><button id="photoButton" class="tool-button" type="button" title="Ask NOVA Pro about a photo (Cloudflare Vision)" aria-label="Analyze a photo">📷</button><button id="searchToggle" class="tool-button" aria-pressed="false" title="Search the web">⌕ <span>Web</span></button><button id="buildToggle" class="tool-button" aria-pressed="false" title="Generate editable project files">◇ <span>Build</span></button><button id="voiceButton" class="tool-button" title="Dictate message" aria-label="Talk to NOVA">🎙</button><button id="stopSpeech" class="tool-button" title="Stop NOVA speaking" aria-label="Stop speech">◼</button></div><button id="sendBtn" class="send-button" aria-label="Send message">↑</button></div></div><div class="under-composer" id="usageNote">Offline workspace ready · Connect Cloudflare AI in Settings for live answers.</div></div>
       </section>
       <section class="work-section" id="workSection" aria-label="File workspace"><div class="work-head"><div><span class="eyebrow">LIVE WORKSPACE</span><h2>Project files</h2></div><button id="addFile" class="mini-button">＋ New</button></div><div class="artifact-workspace-tabs"><button type="button" id="artifactCodeTab" class="active">Code</button><button type="button" id="artifactPreviewTab">Live preview</button></div><div id="artifactLibrary" class="artifact-library" aria-label="Saved artifacts"></div><div class="work-tools"><button id="importFiles">⇧ Import</button><button id="exportZip">⇩ ZIP</button><button id="previewBtn">◈ Preview</button></div><div id="artifactCodePane" class="artifact-pane"><div class="file-list" id="fileList"><div class="empty-files">No project files yet. Use <strong>Build</strong> to ask NOVA to create them, or start from a template.</div></div><div class="editor-head"><span id="editingName">No file selected</span><div><button id="downloadFile" class="tiny-btn" aria-label="Download selected file" title="Download file">⇩</button><button id="deleteFile" class="tiny-btn danger" aria-label="Delete selected file" title="Delete file">×</button></div></div><textarea class="code-editor" id="codeEditor" aria-label="File editor" spellcheck="false" placeholder="Select a file to edit…" disabled></textarea><div class="work-tip">Code runs only in a sandboxed preview—not on NOVA's server.</div></div><div id="artifactPreviewPane" class="artifact-pane" hidden><div class="artifact-toolbar"><button type="button" id="artifactRefresh">↻ Refresh</button><button type="button" id="artifactOpenDialog">↗ Expand</button><button type="button" id="artifactExportZip">↓ ZIP</button><button type="button" id="artifactFixErrors" title="Prepare a NOVA Pro repair request using preview errors">✦ Fix errors</button></div><iframe id="artifactFrame" title="NOVA artifact preview" sandbox="allow-scripts" referrerpolicy="no-referrer" class="artifact-inner-frame"></iframe><div class="work-tip" id="artifactDiagnostics" role="status" aria-live="polite">Preview error diagnostics: run Refresh to check your HTML and JavaScript. Errors stay on this device.</div><div class="work-tip">Artifact code runs in an isolated sandbox, without access to your NOVA chats or local files. Fixing errors uses your configured hosted model and requires your approval.</div></div></section>
     </div>
     <nav class="mobile-tabs" aria-label="Mobile navigation"><button data-tab="chat" class="active"><span>◉</span> Chat</button><button data-tab="files"><span>▤</span> Files</button><button data-tab="history"><span>☷</span> Chats</button><button data-tab="settings"><span>⚙</span> Settings</button></nav>
   </div>
 </div>
-<input id="attachInput" type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.html,.css,.py,.lua,.csv,.xml,.yml,.yaml,.sql,.svg" multiple hidden><input id="importInput" type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.html,.css,.py,.lua,.csv,.xml,.yml,.yaml,.sql,.svg" multiple hidden>
+<input id="attachInput" type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.html,.css,.py,.lua,.csv,.xml,.yml,.yaml,.sql,.svg" multiple hidden><input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><input id="importInput" type="file" accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.html,.css,.py,.lua,.csv,.xml,.yml,.yaml,.sql,.svg" multiple hidden>
 <dialog id="settingsDialog"><div class="dialog-head"><div><span class="eyebrow">CONFIGURATION</span><h2>Settings</h2></div><button class="icon-button" data-close="settingsDialog" aria-label="Close settings">✕</button></div><div class="dialog-content"><div class="settings-section"><h3>Models &amp; responses</h3><p class="help">NOVA Pro is a configuration of a hosted open-weight model, not a model with Claude Fable-level intelligence. The exact provider appears in the connection status.</p><div class="label-row"><label for="settingsModel">Default model</label></div><select id="settingsModel" class="settings-select"><option value="native">NOVA Native — our own local model</option><option value="pro">NOVA Pro — hosted</option><option value="gemma">Gemma 4 — balanced</option><option value="glm">GLM 4.7 Flash — fast</option><option value="qwen">Qwen 3.8 — reasoning</option><option value="nova-tiny">NOVA Tiny — experimental local</option></select><div class="label-row"><label for="responseLength">Response length</label></div><select id="responseLength" class="settings-select"><option value="brief">Brief</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option><option value="extended">Extended answer</option></select><div class="label-row"><label for="responseTone">Response style</label></div><select id="responseTone" class="settings-select"><option value="professional">Professional</option><option value="friendly">Friendly</option><option value="technical">Technical</option></select><div class="label-row"><label for="reasoningLevel">Reasoning level</label></div><select id="reasoningLevel" class="settings-select"><option value="auto">Automatic</option><option value="quick">Quick (short prompts)</option><option value="medium">Standard</option><option value="deep">Deep (uses more tokens)</option></select><p class="help">NOVA Pro uses quick reasoning for simple messages by default so a short reply is less likely to spend its entire output allowance thinking. Deep reasoning can consume more quota.</p><div class="label-row"><label for="creativity">Creativity</label></div><select id="creativity" class="settings-select"><option value="precise">Precise</option><option value="balanced">Balanced</option><option value="creative">Creative</option></select></div><div class="settings-section"><h3>Original NOVA Native model</h3>
 <p class="help">Our own 50,033-parameter neural classifier, trained from scratch and bundled for fast offline use. Its 17 labels are intent groups, NOT a limit on questions. NOVA can handle many messages, and modular local tools add 14 extra project types without needing a new neural checkpoint. It cannot yet reason or write like a large language model.</p>
 <div id="nativeInfo" class="help">Model weights have not been loaded yet.</div>
@@ -491,6 +491,60 @@ async function makeNativeReply(chat,promptText,attachments,sentModel){
  }
 }
 
+// Photo analysis is opt-in. Canvas re-encodes to JPEG, strips original
+// metadata, downscales, and never saves the image to chat history or D1.
+async function compressedPhotoData(file){
+ if(!file||file.size>14000000||!/^image\/(jpeg|png|webp)$/.test(file.type))
+  throw Error('Select a JPEG, PNG or WebP photo smaller than 14 MB');
+ const url=URL.createObjectURL(file);
+ try{
+  const photo=new Image();
+  await new Promise((resolve,reject)=>{
+   photo.onload=resolve;photo.onerror=()=>reject(Error('Photo could not be loaded'));
+   photo.src=url;
+  });
+  const scale=Math.min(1,900/Math.max(photo.naturalWidth,photo.naturalHeight));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(photo.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(photo.naturalHeight*scale));
+  const context=canvas.getContext('2d');
+  if(!context)throw Error('Photo processing is unavailable');
+  context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(photo,0,0,canvas.width,canvas.height);
+  let image=canvas.toDataURL('image/jpeg',.78);
+  if(image.length>1300000)image=canvas.toDataURL('image/jpeg',.5);
+  if(image.length>1300000)throw Error('Photo is too large after resizing');
+  return image;
+ }finally{URL.revokeObjectURL(url)}
+}
+async function analyzePhoto(file){
+ if(busy)return notice('Finish your current reply before sending a photo');
+ if(!['pro','glm','qwen','gemma'].includes(state.model)||!modelReady)
+  return notice('Select ✦ Pro and connect Cloudflare AI before analyzing photos');
+ if(!state.passcode)return notice('Enter your NOVA owner passcode in Settings');
+ const question=$('messageInput').value.trim()||'Describe this image and its important visible details.';
+ if(question.length>1500)return notice('For photo questions, use fewer than 1500 characters');
+ if(!confirm('Send the selected photo to Cloudflare Workers AI for visual analysis? The photo is not saved in NOVA cloud memory or your chat history.'))return;
+ let encoded;
+ try{encoded=await compressedPhotoData(file)}catch(error){return notice(error.message)}
+ const chat=ensureChat(),sentModel='pro';
+ if(chat.messages.length===0)chat.title='Photo question: '+question.slice(0,40);
+ chat.messages.push({role:'user',content:'[Photo analyzed, image not stored]\n'+question});
+ const answer={role:'assistant',content:'Analyzing photo using Cloudflare Vision…',truncated:false};
+ chat.messages.push(answer);chat.updated=Date.now();$('messageInput').value='';resizePrompt();save();renderChats();renderMessages();
+ busy=true;aborter=new AbortController();setButtons();
+ try{
+  const response=await fetch(apiEndpoint('/api/vision'),{
+   method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},
+   body:JSON.stringify({image:encoded,question}),signal:aborter.signal
+  });
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Photo analysis failed');
+  answer.content=String(data.answer||'No visual answer returned').slice(0,15000)+'\n\nAnalyzed with Cloudflare Llama Vision; the original image was not stored.';
+  recordUsage(sentModel);
+ }catch(error){answer.content=error.name==='AbortError'?'Photo analysis cancelled.':String(error.message||error)}
+ finally{busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons()}
+}
 async function sendMessage(){
  if(busy){aborter?.abort();notice('Stopping current reply…');return}
  const input=$('messageInput'),promptText=input.value.trim();if(!promptText)return;
@@ -820,6 +874,8 @@ function init(){ensureChat();
  $('modelSelect').value=state.model;setTheme();save();setButtons();renderMessages();status();$('settingsDialog').close();notice(state.model==='native'?'NOVA settings saved locally':'Settings saved · Checking hosted connection')});
  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));$('messageInput').addEventListener('input',resizePrompt);$('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!window.matchMedia('(pointer:coarse)').matches){e.preventDefault();sendMessage()}});$('sendBtn').addEventListener('click',sendMessage);
  $('searchToggle').addEventListener('click',()=>{state.search=!state.search;save();setButtons();status();if(state.search)notice(state.model==='native'?'Web is on · NOVA searches factual questions, not casual messages':webReady?(searchMode==='web'?'Web on · searches when relevant':'Web on · Wikipedia references when relevant'):'Web uses your Worker when deployed');else notice('Web search disabled · NOVA Native stays local')});$('buildToggle').addEventListener('click',()=>{state.build=!state.build;save();setButtons();notice(state.build?'Build mode enabled · Ask for a website or code project':'Chat mode enabled')});
+ $('photoButton').addEventListener('click',()=>{$('photoInput').click()});
+ $('photoInput').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(file)await analyzePhoto(file)});
  $('attachBtn').addEventListener('click',()=>$('attachInput').click());$('attachInput').addEventListener('change',async e=>{await importText(e.target.files,true);e.target.value=''});$('importFiles').addEventListener('click',()=>$('importInput').click());$('importInput').addEventListener('change',async e=>{await importText(e.target.files,false);e.target.value=''});
  $('artifactCodeTab').addEventListener('click',()=>setArtifactView('code'));
  $('artifactPreviewTab').addEventListener('click',()=>setArtifactView('preview'));
