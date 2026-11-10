@@ -30,6 +30,8 @@ jobs:
         run: python3 training/test_pipeline.py
       - name: Test incremental large-memory indexing and quota
         run: python3 training/test_memory_index.py
+      - name: Evaluate chat routing, web research and memory privacy regressions
+        run: node tests/nova_behavior_eval.cjs
       - name: Test secure sandbox preview errors and user-approved repair
         run: node tests/nova_preview.cjs
       - name: Test off-device Cloudflare D1 memory authorization and recall
