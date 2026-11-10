@@ -38,6 +38,8 @@ jobs:
         run: node tests/nova_preview.cjs
       - name: Test Cloudflare image generation authentication and output
         run: node tests/nova_image.cjs
+      - name: Validate NOVA Create Studio image and GLB mobile workflows
+        run: node tests/nova_create.cjs
       - name: Test real procedural GLB generation and glTF 2.0 format
         run: node tests/nova_3d.cjs
       - name: Validate Cloudflare Vision photo privacy and security
