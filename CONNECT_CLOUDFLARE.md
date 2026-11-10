@@ -26,6 +26,20 @@ Only after the real Worker deployment succeeds can you set `NOVA_PASSCODE` under
 
 If the build still publishes static assets, open **Deployments → latest deployment → Build logs** and inspect the command it executed. Check that Cloudflare is linked to the correct repository and branch and is actually using the Wrangler configuration. Static-only projects cannot accept runtime variables or bindings.
 
+## If NOVA says "Incorrect passcode" and then "AI request failed"
+
+Those are two separate failures. Once the passcode is correct, the second error means Cloudflare rejected or could not complete a **model inference**. This can happen because of model capacity, account access, quotas, or a model-specific failure.
+
+NOVA's Worker now catches a **NOVA Pro** model startup failure and tries GLM 4.7 Flash, labeling the fallback. The fallback is not attempted when the daily free allowance is exhausted. Errors now identify common Cloudflare numeric codes without displaying private requests. The updated file is `cloudflare/NOVA_3_Phone_Deploy_Worker.js`.
+
+1. Check **Cloudflare → Workers & Pages → nova-ai → Deployments**. Make sure the latest commit has successfully deployed. If not, use **Retry deployment** or redeploy from `main`.
+2. Open the NOVA website. Confirm the private passcode in **Settings → Connection & installation**; do not share the secret.
+3. Select **GLM 4.7 Flash** and send `Hi`. If that works, try NOVA Pro.
+4. If both fail, open **Cloudflare → Workers & Pages → nova-ai → Observability → Logs** and reproduce a failed test. Look for the numeric error code. Hide private messages, secrets, and personal details before sharing a screenshot.
+5. Some common Cloudflare Workers AI codes: **3036** daily free allowance used, **3040** capacity reached, **5035** paid plan required, **5007** model unavailable, **3007** timeout.
+
+A successful `/api/status` only confirms the binding and secret exist. It **does not** prove the account can run the selected model.
+
 ## Part A — Deploy your AI server on Cloudflare (laptop)
 
 You only need to do this once, using a Cloudflare account eligible to use Workers AI. **Do not put passwords, API keys, or credit card details in GitHub or ChatGPT.**
