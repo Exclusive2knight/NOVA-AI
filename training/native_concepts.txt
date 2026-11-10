@@ -1,0 +1,7 @@
+NOVA builds useful tools with clear descriptions of their limitations. A user may ask a question using shorthand, slang, or a spelling error, and the software should interpret familiar patterns where possible. When the meaning is genuinely unclear, it should request clarification rather than inventing an answer.
+
+An experimental language model learns relationships between tokens by training on examples. Training reduces a loss function over many batches; held-out validation tests whether an improvement applies to new text. A tiny sample is sufficient to test code, but not to develop broad factual knowledge.
+
+Good user experiences include accessible controls, meaningful loading indicators, explicit consent for data use, and a way to export personal project files. The assistant should describe what actions it actually performed and avoid falsely claiming to have used tools that were never run.
+
+A project can be represented by HTML for structure, CSS for layout and visual details, and JavaScript for interactions. A sandboxed preview helps users see results without allowing project code to access their private assistant conversation.
