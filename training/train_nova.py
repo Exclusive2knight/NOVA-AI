@@ -4,6 +4,7 @@ Usage: pip install torch; python training/train_nova.py --data training/examples
 """
 import argparse
 import json
+from itertools import chain
 import math
 import random
 from pathlib import Path
@@ -107,8 +108,8 @@ def main():
     n_holdout = max(1, len(docs)//10) if len(docs)>1 else 0
     train = docs[n_holdout:]
     valid = docs[:n_holdout] or docs[:1]
-    train_tokens = torch.tensor(sum((encode(x) for x in train), []), dtype=torch.long)
-    valid_tokens = torch.tensor(sum((encode(x) for x in valid), []), dtype=torch.long)
+    train_tokens = torch.tensor(list(chain.from_iterable(encode(x) for x in train)), dtype=torch.long)
+    valid_tokens = torch.tensor(list(chain.from_iterable(encode(x) for x in valid)), dtype=torch.long)
     if len(valid_tokens) <= args.context+1:
         valid_tokens = train_tokens  # small demo dataset; NOT a valid held-out evaluation
         print("Warning: too little validation data; evaluation reuses train tokens.")
