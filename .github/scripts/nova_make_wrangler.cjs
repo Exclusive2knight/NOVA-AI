@@ -18,6 +18,10 @@ if(config.name!=='nova-ai'||config.ai?.binding!=='AI'){
  console.error('Unexpected Wrangler configuration. Refusing to change Worker or AI binding.');
  process.exit(1);
 }
+// Preserve Cloudflare dashboard settings (for example search-provider choice)
+ // while retaining encrypted Worker secrets across deployments.
+config.keep_vars=true;
+config.secrets={required:['NOVA_PASSCODE']};
 config.d1_databases=[{
  binding:'NOVA_MEMORY',
  database_name:'nova-memory',
