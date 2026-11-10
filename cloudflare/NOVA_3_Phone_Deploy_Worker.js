@@ -259,9 +259,18 @@ async function runAIWithFallback(env,body,messages,build=false){
  const model=selectedModel(body,env),params=modelOptions(body,env,build);
  return {result:await env.AI.run(model,{messages,stream:!build,...params}),model,label:body.model||'Model',fallback:false};
 }
+// An enabled Web toggle is permission to research when useful, not a
+// request to search for every greeting or spend owner search credits.
+function serverSearchAppropriate(text){
+ const q=String(text||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.!?,]+$/g,'').trim();
+ const explicit=/\b(?:search\s+(?:the\s+)?(?:internet|web|online)|search\s+for|look\s*up|browse\s+(?:the\s+)?web|research\b)\b/.test(q);
+ if(explicit)return true;
+ if(/^(?:hi|hello|hey|yo|thanks|thank you|good morning|good evening|what can you do|who are you|how (?:are|ar|r) (?:you|u|we|wi|with) (?:doing|doin|ding|going)(?: (?:today|now))?|what(?:'s| is) up|how(?:'s| is) it going|what (?:are|r) we doing)$/.test(q))return false;
+ return true;
+}
 async function handleChat(request,env,body){
  const msgs=parseRequest(body);
- const sources=body.search?await research(msgs.at(-1).content,env):[];
+ const sources=body.search&&serverSearchAppropriate(msgs.at(-1).content)?await research(msgs.at(-1).content,env):[];
  const modelMessages=prepareMessages(body,'chat',sources);
  const enc=new TextEncoder();
  if(body.model==='pro'){
