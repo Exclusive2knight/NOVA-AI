@@ -17,7 +17,7 @@ const db={prepare(sql){
  const stmt={
   params:[],
   bind(...values){this.params=values;return this;},
-  async first(){assert(sql.includes('COUNT(*)'));return {total:rows.length}},
+  async first(){if(sql.includes('COUNT(*)'))return {total:rows.length};if(sql.includes('SELECT id FROM nova_memories WHERE body=?'))return rows.find(r=>r.body===this.params[0])||null;throw Error('Unexpected mock DB first: '+sql)},
   async run(){
    if(sql.startsWith('INSERT INTO nova_memories')){
     const [body,source,created_at,id]=this.params;
@@ -57,6 +57,12 @@ async function run(){
  response=await entry.fetch(req('save',{text:'Monarch Q6 has quad motors and a supercharged V6',source:'note'}),env);
  assert.equal(response.status,200);
  const saved=await response.json();assert(saved.id&&saved.saved);
+ const duplicate=await entry.fetch(req('save',{text:'Monarch Q6 has quad motors and a supercharged V6',source:'note'}),env);
+ assert.equal((await duplicate.json()).duplicate,true,'Same memory must not be stored twice');
+ assert.equal(rows.length,1);
+ const sensitive=await entry.fetch(req('save',{text:'My password is a-secret-password'}),env);
+ assert.equal(sensitive.status,400,'Secrets must not be saved to memory');
+ assert.equal(rows.length,1);
  response=await entry.fetch(req('search',{query:'What did I say about Monarch Q6?'}),env);
  const result=await response.json();
  assert.equal(result.matches.length,1);
