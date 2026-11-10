@@ -38,6 +38,8 @@ jobs:
         run: node tests/nova_preview.cjs
       - name: Validate Cloudflare Vision photo privacy and security
         run: node tests/nova_vision.cjs
+      - name: Validate Cloudflare deployment preparation without credentials
+        run: node tests/nova_deploy.cjs
       - name: Test off-device Cloudflare D1 memory authorization and recall
         run: node tests/nova_cloud_memory.cjs
       - name: Test local memory indexing
