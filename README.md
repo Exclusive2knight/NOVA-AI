@@ -2,6 +2,17 @@
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
 
+## NOVA original-model training pipeline
+
+The [training system](training/TRAINING_SYSTEM.md) now provides an **actual experimental training workflow** for the original NOVA decoder transformer:
+
+- **Approved-text pretraining:** `prepare_corpus.py` audits licensed local text, removes exact duplicates and obvious private information, and separates source-level training/validation/test sets. `pretrain.py` runs PyTorch next-token training, optionally with training-only synthetic examples.
+- **Synthetic dialogue:** `synthetic_dialogue.py` makes conservative, provenance-labeled variants from original seed examples. It does not fake billions of conversations.
+- **Opt-in feedback:** NOVA Studio has local **Helpful / Needs work** rating controls with private label export. Separately, `prepare_preferences.py` curates explicitly consenting preferred/rejected examples and `train_preferences.py` implements DPO-style gradient-based preference optimization for the original checkpoint.
+- **Principle-guided review:** `nova_constitution.json` defines NOVA's own principles; `constitutional_review.py` flags simple risks for human inspection. This is **not** full model-based Constitutional AI or online RLHF.
+
+The new work is **source code and a small demonstrator**, not billions of trained tokens or a fully trained general-purpose assistant. The web app's original NOVA Native model remains its trained intent classifier; generative transformer research checkpoints are not yet a selectable production model.
+
 ## NOVA Studio — redesigned website and installable app
 
 NOVA now has a polished original interface for chat and editable Artifacts, with a desktop focus mode, smooth loading/entrance animations, a responsive mobile layout, dark/light themes, spacing and motion preferences, keyboard shortcuts, and useful accessibility options. The same site installs as a Progressive Web App on supported devices. It is **not** a native App Store/Play Store package.
