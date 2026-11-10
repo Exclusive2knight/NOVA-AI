@@ -12,6 +12,13 @@ const inline=html.match(/<script>([\s\S]*?)<\/script>/);
 assert(inline,'NOVA inline application script missing');
 new vm.Script(inline[1],{filename:'nova-app.js'});
 assert(manifest.name.includes('NOVA'),'Missing NOVA PWA manifest');
+assert(html.includes('id="memoryOpen"'),'Cloud memory should be visibly accessible from chat even on a phone');
+assert(html.includes('id="cloudMemorySection"'),'Cloud memory should be directly reachable within settings');
+assert(html.includes('id="searchToggle"'),'Web search control should remain visible');
+assert(html.includes("updateViaCache:'none'"),'Phone PWA must check for updated service workers');
+const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
+assert(sw.includes("event.respondWith(fetch(r,{cache:'no-cache'})"),'PWA JavaScript should use updated network copy before cached fallback');
+
 assert.equal(config.name,'nova-ai');
 assert.equal(config.ai.binding,'AI');
 assert.match(config.main,/NOVA_3_Phone_Deploy_Worker\.js/);
