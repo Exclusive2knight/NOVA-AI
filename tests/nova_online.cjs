@@ -45,6 +45,29 @@ async function test(){
  assert(!online.shouldSearch('Build a habit tracker',{files:[{path:'index.html'}],skill:'habit'},{enabled:true}));
  assert(!online.shouldSearch('what is 2+2',{files:[],skill:'math'},{enabled:true}));
  assert(!online.shouldSearch('qzx pzzzz',{files:[],skill:'clarify'},{enabled:true}));
+
+ for(const text of [
+  'How are we doing?', 'how ar with ding', 'How are you doing?',
+  'How are we doing today?', 'What can you do?', 'Who are you?',
+  "What's up?", 'Thanks!', 'Can you help me fix my project?',
+  'What did we work on yesterday?'
+ ]){
+  assert(!online.shouldSearch(text,{files:[],skill:'general'},{enabled:true}),
+   'Web enabled should not replace conversation with search results: '+text);
+ }
+ for(const text of [
+  'Search the internet for Chevy EVs', 'Look up current vehicle safety ratings',
+  'What is the latest news about EVs?', 'What is an electric vehicle?'
+ ]){
+  assert(online.shouldSearch(text,{files:[],skill:'general'},{enabled:true}),
+   'Research request should still trigger search: '+text);
+ }
+ assert(!online.shouldSearch('Search the internet for cars',null,{enabled:false}));
+ assert(html.includes('window.NOVANativeOnline?.shouldSearch((messages.filter('),
+  'Hosted conversations must also gate Web search by message intent');
+ assert(backend.includes('function serverSearchAppropriate'),
+  'Backend must avoid web requests for casual conversation');
+
  const a=await online.search('search the web for electric vehicles',{backendUrl:'https://nova-ai.example.workers.dev'});
  assert.equal(a.mode,'direct','Browser should fall back to public Wikipedia');
  assert.equal(a.sources.length,2);
