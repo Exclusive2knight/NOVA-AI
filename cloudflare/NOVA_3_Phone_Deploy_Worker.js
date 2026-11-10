@@ -173,8 +173,8 @@ async function handleCloudMemory(request,env){
   if(action==='search'){
    const query=String(body?.query||'').trim().slice(0,250);
    const stop=new Set(['what','where','when','who','why','how','have','your','that','this','from','with','about','does','did','and','the','for','are','were','was','you','remember','recall','tell','me']);
-   let terms=(query.toLowerCase().match(/[\\p{L}\\p{N}]{2,}/gu)||[]).filter(t=>!stop.has(t)).slice(0,12);
-   if(!terms.length)terms=(query.toLowerCase().match(/[\\p{L}\\p{N}]{2,}/gu)||[]).slice(0,10);
+   let terms=(query.toLowerCase().match(/[a-z0-9]{2,}/g)||[]).filter(t=>!stop.has(t)).slice(0,12);
+   if(!terms.length)terms=(query.toLowerCase().match(/[a-z0-9]{2,}/g)||[]).slice(0,10);
    if(!terms.length)return responseJSON({matches:[]});
    const expression=terms.map(t=>'"'+t.replace(/"/g,'""')+'"').join(' OR ');
    const rows=await db.prepare(`SELECT id,source,created_at,
