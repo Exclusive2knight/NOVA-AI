@@ -87,7 +87,12 @@ function hintCategory(text){
 }
 function respond(native,prompt,opts={}){
  const {enabled=true,onStep,build=false}=opts;
- if(!enabled)return native.respond(prompt,{build,onStep});
+ if(!enabled){
+  const key=global.NOVASkills?.recognize(prompt);
+  const creating=build||/\b(build|make|create|design|generate|give me|put together|set up|mock up|want a|need a)\b/i.test(String(prompt));
+  if(key&&creating)return global.NOVASkills.respond(prompt,{onStep});
+  return native.respond(prompt,{build,onStep});
+ }
  const understood=interpret(prompt);
  if(understood.edits.length&&onStep)onStep({type:'language',label:'Interpreted common slang or typos: '+understood.edits.join(', ')});
  if(understood.unclear){
@@ -97,7 +102,7 @@ function respond(native,prompt,opts={}){
  // Modular skill registry adds many genuinely usable projects without changing
  // the 17-class neural checkpoint or pretending new categories were trained.
  const skillKey=global.NOVASkills?.recognize(understood.text);
- const creationAsked=build||/\b(build|make|create|design|generate|put together|set up|mock up|make me|need a|need an|want a|want an)\b/i.test(understood.text);
+ const creationAsked=build||/\b(build|make|create|design|generate|give me|put together|set up|mock up|make me|need a|need an|want a|want an)\b/i.test(understood.text);
  if(skillKey&&creationAsked){
   const skillResult=global.NOVASkills.respond(understood.text,{onStep});
   if(skillResult){
