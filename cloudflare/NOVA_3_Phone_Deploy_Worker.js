@@ -67,37 +67,78 @@ function parseRequest(body){if(!body||!Array.isArray(body.messages))throw Error(
 function attachmentsFrom(body){if(!Array.isArray(body.attachments))return'';const a=body.attachments.slice(0,6).filter(f=>f&&typeof f.name==='string'&&typeof f.text==='string');const joined=a.map(f=>'--- BEGIN FILE: '+f.name.slice(0,100)+' ---\n'+f.text.slice(0,12000)+'\n--- END FILE ---').join('\n');return joined.slice(0,24000)}
 async function readBody(request){if(Number(request.headers.get('content-length')||0)>MAX_BODY)throw Error('Request too large');const text=await request.text();if(text.length>MAX_BODY)throw Error('Request too large');let body;try{body=JSON.parse(text)}catch{throw Error('Invalid JSON')};return body}
 function passcodeValid(request,env){if(!env.NOVA_PASSCODE||typeof env.NOVA_PASSCODE!=='string')return false;const h=request.headers.get('X-NOVA-Passcode')||'';return h.length>=8&&h.length<=160&&h===env.NOVA_PASSCODE}
+// Search APIs require owner-provided keys kept only in Worker secrets.
+// Explicit preference is optional; default to previously supported Tavily.
+function configuredWebProvider(env){
+ const choice=String(env.NOVA_SEARCH_PROVIDER||'').trim().toLowerCase();
+ if(choice==='brave'&&env.BRAVE_SEARCH_API_KEY)return 'brave';
+ if(choice==='tavily'&&env.TAVILY_API_KEY)return 'tavily';
+ if(env.TAVILY_API_KEY)return 'tavily';
+ if(env.BRAVE_SEARCH_API_KEY)return 'brave';
+ return null;
+}
 async function research(query,env){
-  if(env.TAVILY_API_KEY){
-    const res=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.TAVILY_API_KEY},body:JSON.stringify({query:query.slice(0,450),search_depth:'basic',max_results:5,include_answer:false,include_raw_content:false}),signal:AbortSignal.timeout(18000)});
+  const provider=configuredWebProvider(env);
+  if(provider==='tavily'){
+    const res=await fetch('https://api.tavily.com/search',{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+env.TAVILY_API_KEY},
+      body:JSON.stringify({query:query.slice(0,450),search_depth:'basic',max_results:5,
+        include_answer:false,include_raw_content:false}),
+      signal:AbortSignal.timeout(18000)});
     if(!res.ok)throw Error('Full web search service unavailable ('+res.status+')');
-    const obj=await res.json();return (obj.results||[]).slice(0,5).map(r=>({title:String(r.title||'Web source').slice(0,160),url:String(r.url||'').slice(0,800),content:String(r.content||'').slice(0,950)})).filter(s=>/^https?:\/\//i.test(s.url))
+    const obj=await res.json();
+    return (obj.results||[]).slice(0,5).map(r=>({
+      title:String(r.title||'Web source').slice(0,160),
+      url:String(r.url||'').slice(0,800),
+      content:String(r.content||'').replace(/<[^>]*>/g,' ').slice(0,950)
+    })).filter(s=>/^https:\/\//i.test(s.url));
   }
-  // Wikimedia REST search is a limited, key-free reference search, NOT a full web engine.
+  if(provider==='brave'){
+    // Fixed provider host avoids arbitrary fetches/SSRF; search returns public links.
+    const endpoint=new URL('https://api.search.brave.com/res/v1/web/search');
+    endpoint.searchParams.set('q',query.slice(0,450));
+    endpoint.searchParams.set('count','5');
+    endpoint.searchParams.set('safesearch','strict');
+    const res=await fetch(endpoint.toString(),{
+      headers:{'Accept':'application/json','X-Subscription-Token':env.BRAVE_SEARCH_API_KEY},
+      signal:AbortSignal.timeout(18000)
+    });
+    if(!res.ok)throw Error('Brave search service unavailable ('+res.status+')');
+    const obj=await res.json();
+    return (obj.web?.results||[]).slice(0,5).map(r=>({
+      title:String(r.title||'Web source').replace(/<[^>]*>/g,' ').slice(0,160),
+      url:String(r.url||'').slice(0,800),
+      content:String(r.description||r.extra_snippets?.[0]||'').replace(/<[^>]*>/g,' ').slice(0,950)
+    })).filter(s=>/^https:\/\//i.test(s.url));
+  }
+  // Explicit, non-metered Wikipedia fallback, never mislabeled as full web.
   const url='https://en.wikipedia.org/w/rest.php/v1/search/page?q='+encodeURIComponent(query.slice(0,250))+'&limit=5';
   const res=await fetch(url,{headers:{'Accept':'application/json','User-Agent':'NOVAWorkshop/3.0 (educational website builder; Wikimedia REST search)'},signal:AbortSignal.timeout(16000)});
   if(!res.ok)throw Error('Wikipedia reference search is temporarily unavailable ('+res.status+')');
   const obj=await res.json();return (obj.pages||[]).slice(0,5).map(r=>({title:String(r.title||'Wikipedia article').slice(0,160),url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(String(r.title||'').replace(/ /g,'_')),content:String(r.excerpt||r.description||'').replace(/<[^>]*>/g,' ').slice(0,950)}));
 }
-// Native search does not invoke Workers AI. Anonymous searches use key-free
-// Wikipedia; configured Tavily is used only with a valid owner passcode.
+// Native search does not invoke Workers AI. Anonymous visitors get Wikipedia;
+// full-web providers are available only with a configured owner passcode.
 async function handleNativeSearch(request,env){
  const length=Number(request.headers.get('content-length')||0);
  if(length>2000)return responseJSON({error:'Search query is too long'},413);
  let body;try{body=JSON.parse(await request.text())}catch{return responseJSON({error:'Invalid search request'},400)}
  const query=String(body?.query||'').replace(/\s+/g,' ').trim();
  if(query.length<2||query.length>220)return responseJSON({error:'Search query must be 2–220 characters'},400);
- const authorized=!!(env.TAVILY_API_KEY&&env.NOVA_PASSCODE&&passcodeValid(request,env));
+ const authorized=!!(env.NOVA_PASSCODE&&passcodeValid(request,env));
+ const provider=authorized?configuredWebProvider(env):null;
  // Never spend the owner's metered search-provider quota on anonymous searches.
- const safeEnv={TAVILY_API_KEY:authorized?env.TAVILY_API_KEY:null};
+ const safeEnv={TAVILY_API_KEY:provider==='tavily'?env.TAVILY_API_KEY:null,
+   BRAVE_SEARCH_API_KEY:provider==='brave'?env.BRAVE_SEARCH_API_KEY:null,
+   NOVA_SEARCH_PROVIDER:provider||''};
  try{
   const raw=await research(query,safeEnv);
   const sources=raw.slice(0,5).map(r=>({title:String(r.title||'').slice(0,150),
     url:String(r.url||'').slice(0,750),content:String(r.content||'').slice(0,650)}))
    .filter(r=>{try{return new URL(r.url).protocol==='https:'}catch{return false}});
-  return responseJSON({provider:authorized?'web':'wikipedia',sources,release:'native-online-v1'});
+  return responseJSON({provider:provider?'web':'wikipedia',engine:provider||'wikipedia',sources,release:'native-online-v2'});
  }catch(error){
-  console.warn('NOVA Native reference lookup failed',{provider:authorized?'web':'wikipedia'});
+  console.warn('NOVA Native reference lookup failed',{provider:provider||'wikipedia'});
   return responseJSON({error:'Online reference lookup is temporarily unavailable; try again.'},502);
  }
 }
@@ -199,7 +240,7 @@ async function handleBuild(env,body){
  return responseJSON({message:(chosen.fallback?'[NOVA Pro used '+chosen.label+' after primary model failed]\n\n':'')+String(d.message||'Generated project files.').slice(0,1300),files});
 }
 function embeddedAsset(request){if(typeof EMBEDDED_ASSETS==='undefined')return null;const path=new URL(request.url).pathname;const key=path==='/'?'/index.html':path;const a=EMBEDDED_ASSETS[key];if(typeof a!=='string')return responseJSON({error:'Not found'},404);const type=key.endsWith('.js')?'application/javascript; charset=utf-8':key.endsWith('.css')?'text/css; charset=utf-8':key.endsWith('.svg')?'image/svg+xml':key.endsWith('.webmanifest')?'application/manifest+json':'text/html; charset=utf-8';return new Response(a,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff','Cache-Control':'public, max-age=300'}})}
-const internalWorker = {async fetch(request,env){const url=new URL(request.url),path=url.pathname;if(path==='/api/status'&&request.method==='GET')return responseJSON({ai:!!env.AI,passcodeProtected:!!env.NOVA_PASSCODE,search:true,searchMode:env.TAVILY_API_KEY?'web':'wikipedia',model:MODELS.pro,models:Object.keys(MODELS),proProvider:String(env.NOVA_ENABLE_PAID_PRO||'').toLowerCase()==='true'?'DeepSeek V4.1 Flash (paid only)':'Qwen 3.8 reasoning (free-compatible)',usage:'local-device-counts',release:'nova-pro-reliability-v1',proMode:'validated output with GLM/Gemma fallback'});if(path==='/api/native-search'&&request.method==='POST'){
+const internalWorker = {async fetch(request,env){const url=new URL(request.url),path=url.pathname;if(path==='/api/status'&&request.method==='GET')return responseJSON({ai:!!env.AI,passcodeProtected:!!env.NOVA_PASSCODE,search:true,searchMode:configuredWebProvider(env)&&env.NOVA_PASSCODE?'web':'wikipedia',searchProvider:configuredWebProvider(env)||'wikipedia',webSearchRequiresPasscode:true,model:MODELS.pro,models:Object.keys(MODELS),proProvider:String(env.NOVA_ENABLE_PAID_PRO||'').toLowerCase()==='true'?'DeepSeek V4.1 Flash (paid only)':'Qwen 3.8 reasoning (free-compatible)',usage:'local-device-counts',release:'nova-pro-reliability-v1',proMode:'validated output with GLM/Gemma fallback'});if(path==='/api/native-search'&&request.method==='POST'){
  if(!allowedOrigin(request))return responseJSON({error:'Origin not allowed'},403);
  return handleNativeSearch(request,env);
 }
