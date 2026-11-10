@@ -1,0 +1,21 @@
+name: NOVA code and artifacts checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate NOVA frontend and backend
+        run: node tests/nova_smoke.cjs
+      - name: Validate original model and memory Python code
+        run: python3 -m py_compile training/train_nova.py training/infer_nova.py training/memory_index.py
+      - name: Test local memory indexing
+        run: |
+          python3 training/memory_index.py ingest training/examples.jsonl --db /tmp/nova-memory-test.db
+          python3 training/memory_index.py query "neural network" --db /tmp/nova-memory-test.db
+          python3 training/memory_index.py stats --db /tmp/nova-memory-test.db
