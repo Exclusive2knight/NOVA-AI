@@ -429,15 +429,22 @@ async function sendMessage(){
  }
  busy=true;aborter=new AbortController();
  const outgoing=buildContext(chat.messages,47500);
- const answer={role:'assistant',content:'Preparing your reply…',truncated:false};
+ const answer={role:'assistant',content:'Preparing your reply…',truncated:false,steps:[]};
+ const hostedStep=label=>{
+  answer.steps.push(label);answer.steps=answer.steps.slice(-25);
+  const live=$('activityLive');live.hidden=!state.showActivity;live.textContent='NOVA · '+label;
+ };
+ hostedStep('Preparing secure request for hosted AI');
  chat.messages.push(answer);save();renderMessages();setButtons();
  let completed=false;
  try{
   if(state.build){
+   hostedStep('Requesting editable project files from Cloudflare Worker');
    const data=await buildRequest(outgoing,attachments);
+   hostedStep('Received a project response from the Worker');
    const files=(Array.isArray(data.files)?data.files:[]).filter(f=>validPath(f.path)&&typeof f.content==='string');
    if(files.length){
-    const artifact=storeArtifact(files,chat.title);answer.artifactId=artifact.id;
+    const artifact=storeArtifact(files,chat.title);answer.artifactId=artifact.id;hostedStep('Saved '+files.length+' editable file(s) into NOVA Artifacts');
     chosenFile=files.find(x=>/\.html$/.test(x.path))?.path||files[0].path;
     renderFiles();
    }
@@ -447,8 +454,10 @@ async function sendMessage(){
    let lastPaint=0,combined='',partCount=0,finished=false,finishReason='';
    let requestMessages=outgoing;
    while(partCount<3){
-    const base=combined;
+    hostedStep(partCount===0?'Requesting model response':'Continuing answer after model output limit');
+    const base=combined;let initialContentReceived=false;
     const result=await chatRequest(requestMessages,partCount===0?attachments:[],part=>{
+     if(part&&!initialContentReceived){initialContentReceived=true;hostedStep('Received first response text');}
      answer.content=appendContinuation(base,part);
      if(Date.now()-lastPaint>230){lastPaint=Date.now();renderMessages();}
     },{continuation:partCount>0});
@@ -456,6 +465,7 @@ async function sendMessage(){
      throw Error('The model returned no visible text. Try GLM 4.7 or reduce the reasoning level in Settings.');
     }
     if(!result.content&&partCount>0)break;
+    hostedStep('Received model response'+(result.truncated?' · continuation may be needed':''));
     combined=appendContinuation(combined,result.content);
     answer.content=combined;
     answer.sources=answer.sources?.length?answer.sources:result.sources;
@@ -470,11 +480,13 @@ async function sendMessage(){
    if(state.autoSpeak&&combined)speak(combined);
   }
  }catch(e){
+  hostedStep(e.name==='AbortError'?'Request cancelled':'AI request returned an error');
   const problem=e.name==='AbortError'?'Stopped.':('Could not finish: '+(e.message||String(e)));
   answer.content=completed?answer.content+'\n\n'+problem:problem;
   answer.truncated=completed&&e.name==='AbortError';
  }finally{
-  busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons();
+  if(completed)hostedStep('Completed and saved the response');
+  $('activityLive').hidden=true;busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons();
  }
 }
 
