@@ -20,6 +20,18 @@ async function run(){
  assert(info.parameters>10000,'Neural network has no parameter weights');
  assert(events.some(s=>s.includes('Training')),'Training activity log missing');
  assert(store.size>0,'Trained weights not persisted in local storage');
+
+ for(const question of ['how are we doing', 'how ar with ding','how are you doing']){
+  const reply=brain.respond(question);
+  assert.equal(reply.skill,'greeting','Native should handle casual question locally: '+question);
+  assert(!reply.sources?.length,'Small talk must not return search links');
+ }
+ const languageSrc=fs.readFileSync(path.join(__dirname,'..','nova-language.js'),'utf8');
+ vm.runInNewContext(languageSrc,context,{filename:'nova-language.js'});
+ const fixed=context.window.NOVALanguage.respond(brain,'how ar with ding',{enabled:true});
+ assert.equal(fixed.skill,'greeting','Language helper must interpret common casual typo');
+ assert(!fixed.text.includes('not sure what that means'),'Language helper should not reject casual typo');
+
  const projects=[
   ['make a website for my bakery','website'],
   ['make a todo app','todo'],
