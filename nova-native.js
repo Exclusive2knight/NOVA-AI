@@ -91,8 +91,42 @@ function loadState(){
   return {net:{W1:Float32Array.from(s.W1),b1:Float32Array.from(s.b1),W2:Float32Array.from(s.W2),b2:Float32Array.from(s.b2),epochs:s.epochs||0},teachings:Array.isArray(s.teachings)?s.teachings.slice(-90):[]};
  }catch(e){return null}
 }
-let state=loadState()||{net:newNet(),teachings:[]},ready=!!state.net.epochs,training=null;
-function status(){return{model:'NOVA Native 2.0',architecture:'Original supervised neural network: 1024 input, 48 hidden, 17 intent outputs',parameters:D*H+H+H*K+K,epochs:state.net.epochs,trained:ready,teachings:state.teachings.length,online:false,provider:'None'}}
+function loadBundled(){
+ const b=global.NOVA_NATIVE_BUNDLE;
+ if(!b||b.version!==2||!b.tensors)return null;
+ try{
+  const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  function unpack(key,len){
+   const item=b.tensors[key];
+   if(!item||item.count!==len||typeof item.data!=='string'||!Number.isFinite(item.scale)||item.scale<=0)throw Error('Invalid NOVA Native weights '+key);
+   const bytes=new Uint8Array(len*2);let bits=0,buffer=0,index=0;
+   for(let i=0;i<item.data.length;i++){
+    const ch=item.data[i];if(ch==='=')break;
+    const n=alphabet.indexOf(ch);if(n<0)throw Error('Invalid weight encoding');
+    buffer=(buffer<<6)|n;bits+=6;
+    if(bits>=8){bits-=8;if(index<bytes.length)bytes[index++]=(buffer>>>bits)&255}
+   }
+   if(index!==bytes.length)throw Error('Incomplete weight encoding');
+   const out=new Float32Array(len);
+   for(let i=0;i<len;i++){
+    const raw=bytes[i*2]|(bytes[i*2+1]<<8);
+    out[i]=(raw>=32768?raw-65536:raw)*item.scale;
+   }
+   return out;
+  }
+  const net={W1:unpack('W1',D*H),b1:unpack('b1',H),W2:unpack('W2',H*K),b2:unpack('b2',K),epochs:Number(b.epochs)||0};
+  if(net.epochs<1)throw Error('Model has not been trained');
+  const legacy=JSON.parse(localStorage.getItem('nova-native-v1')||'null');
+  const teachings=Array.isArray(legacy?.teachings)?legacy.teachings.filter(x=>x&&typeof x.prompt==='string'&&CATEGORIES.includes(x.intent)).slice(-90):[];
+  return {net,teachings};
+ }catch(error){return null}
+}
+let loadedFrom='device';
+let state=loadState();
+if(!state){state=loadBundled();loadedFrom=state?'bundled checkpoint':'fresh training'}
+if(!state)state={net:newNet(),teachings:[]};
+let ready=!!state.net.epochs,training=null;
+function status(){return{model:'NOVA Native 2.0',architecture:'Original supervised neural network: 1024 input, 48 hidden, 17 intent outputs',parameters:D*H+H+H*K+K,epochs:state.net.epochs,trained:ready,source:loadedFrom,teachings:state.teachings.length,online:false,provider:'None'}}
 function pause(){return new Promise(resolve=>setTimeout(resolve,0))}
 async function train(onStep){
  if(training)return training;
@@ -109,7 +143,7 @@ async function train(onStep){
    net.epochs=epoch+1;
    if(epoch%10===0){if(onStep)onStep({type:'train',label:'Neural training '+Math.round((epoch+1)/goal*100)+'%'});await pause()}
   }
-  ready=true;saveState(net,state.teachings);
+  ready=true;loadedFrom='device';saveState(net,state.teachings);
   if(onStep)onStep({type:'train',label:'NOVA Native neural model ready ('+net.epochs+' training passes)'});
   return status();
  })().finally(()=>{training=null});
@@ -218,6 +252,6 @@ async function teach(prompt,intent){
  await train();
  return status();
 }
-function reset(){try{localStorage.removeItem(KEY)}catch(e){}state={net:newNet(),teachings:[]};ready=false}
+function reset(){try{localStorage.removeItem(KEY)}catch(e){}state={net:newNet(),teachings:[]};ready=false;loadedFrom='fresh training'}
 global.NOVANative={version:'2.0',categories:CATEGORIES.slice(),status,train,respond,classify,teach,reset};
 })(window);
