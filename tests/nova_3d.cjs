@@ -48,6 +48,19 @@ for(const [prompt,kind,name] of prompts){
  assert(filename.endsWith('.glb'));
  assert(gltf.materials.every(m=>m.pbrMetallicRoughness.baseColorFactor.length===4));
 }
+const aiPlan={parts:[
+ {name:'Main hull',shape:'box',material:'paint',translation:[0,1,0],scale:[2,.7,5]},
+ {name:'Windshield',shape:'box',material:'glass',translation:[0,1.8,-.9],scale:[1.5,.4,.1]},
+ {name:'Tire left',shape:'cylinder',material:'tire',translation:[-1,.4,-1.5],scale:[.8,.2,.8]},
+ {name:'Tire right',shape:'cylinder',material:'tire',translation:[1,.4,-1.5],scale:[.8,.2,.8]},
+ {name:'Malicious part',shape:'javascript',material:'paint',translation:[0,0,0],scale:[1,1,1]},
+ {name:'Out of bounds',shape:'box',material:'paint',translation:[999,0,0],scale:[1,1,1]}
+]};
+const custom=gen.buildFromPlan('Futuristic electric crossover',aiPlan,{kind:'vehicle'});
+assert.equal(custom.scene.parts.length,4,'AI plan must be validated before GLB conversion');
+assert(custom.filename.endsWith('-ai-starter.glb'));
+assert.equal(parse(custom.bytes).nodes.length,4);
+assert.throws(()=>gen.buildFromPlan('No parts',{parts:[]}),/too few/);
 assert.throws(()=>gen.build(''),/Describe/);
 assert.throws(()=>gen.build('A spaceship',{kind:'full-auto-ai'}),/supported starter/);
 assert.equal(gen.detect('2019 BMW X5 SUV'),'vehicle');
