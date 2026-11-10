@@ -351,6 +351,52 @@ async function continueAnswer(index){
 
 async function buildRequest(messages,attachments){const response=await fetch(apiEndpoint('/api/build'),{method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},body:JSON.stringify({messages,memory:state.memory,model:state.model,preferences:requestPreferences(),files:Object.entries(state.files).slice(0,14).map(([path,content])=>({path,content:content.slice(0,16000)})),attachments}),signal:aborter.signal});let data={};try{data=await response.json()}catch(e){}if(!response.ok)throw new Error(data.error||'Build failed ('+response.status+')');return data}
 
+
+function updateNativeInfo(){
+ const brain=window.NOVANative;
+ if(!brain){$('nativeInfo').textContent='NOVA Native script missing. Reload the updated site.';return}
+ const info=brain.status();
+ $('nativeInfo').textContent=info.model+' · '+info.parameters.toLocaleString()+' own neural parameters · '+info.epochs+' training passes · '+info.teachings+' custom examples · '+(info.trained?'Ready':'Not trained yet')+' · Runs offline';
+}
+async function makeNativeReply(chat,promptText,attachments,sentModel){
+ const answer={role:'assistant',content:'Starting NOVA Native locally…',steps:[],truncated:false};
+ chat.messages.push(answer);busy=true;aborter=new AbortController();setButtons();renderMessages();
+ const controller=aborter;let lastPaint=0;
+ const record=entry=>{
+  if(controller.signal.aborted)return;
+  const label=String(entry?.label||'Processing locally');
+  answer.steps.push(label);answer.steps=answer.steps.slice(-28);
+  const live=$('activityLive');live.hidden=false;live.textContent='NOVA Native · '+label;
+  if(Date.now()-lastPaint>160){lastPaint=Date.now();renderMessages()}
+ };
+ try{
+  if(!window.NOVANative)throw Error('NOVA Native script is unavailable. Refresh the site and verify nova-native.js is deployed.');
+  if(!window.NOVANative.status().trained)await window.NOVANative.train(record);
+  if(controller.signal.aborted)throw new DOMException('Stopped','AbortError');
+  const result=window.NOVANative.respond(promptText,{build:!!state.build,onStep:record});
+  answer.content=result.text;
+  if(result.files&&result.files.length){
+   const files=result.files.filter(f=>validPath(f.path)&&typeof f.content==='string');
+   if(files.length){
+    const artifact=storeArtifact(files,chat.title);
+    answer.artifactId=artifact.id;
+    chosenFile=files.find(f=>f.path.endsWith('.html'))?.path||files[0].path;
+    renderFiles();
+    answer.content+='\n\nCreated: '+files.map(f=>f.path).join(', ')+'. Open the artifact to preview, edit, and export it.';
+    record({label:'Saved '+files.length+' files to an editable local artifact'});
+   }
+  }
+  if(attachments.length)answer.content+='\n\nNote: This version of NOVA Native does not read attached documents or send them to a provider.';
+  recordUsage(sentModel);
+  if(state.autoSpeak)speak(answer.content);
+ }catch(error){
+  answer.content=error.name==='AbortError'?'Stopped.':'NOVA Native error: '+String(error.message||error);
+ }finally{
+  busy=false;aborter=null;$('activityLive').hidden=true;
+  chat.updated=Date.now();save();updateNativeInfo();renderChats();renderMessages();setButtons();
+ }
+}
+
 async function sendMessage(){
  if(busy){aborter?.abort();notice('Stopping current reply…');return}
  const input=$('messageInput'),promptText=input.value.trim();if(!promptText)return;
@@ -361,6 +407,7 @@ async function sendMessage(){
  chat.messages.push({role:'user',content:promptText,attachments:pendingFiles.map(f=>f.name)});
  chat.updated=Date.now();input.value='';resizePrompt();
  const attachments=pendingFiles;pendingFiles=[];updateAttach();renderChats();
+ if(sentModel==='native'){await makeNativeReply(chat,promptText,attachments,sentModel);return}
  if(sentModel==='nova-tiny'){
   chat.messages.push({role:'assistant',content:tinyReply(promptText)});recordUsage(sentModel);save();renderMessages();
   if(state.autoSpeak)speak(chat.messages.at(-1).content);return;
@@ -546,6 +593,27 @@ function installApp(){
 function init(){ensureChat();
  if(!state.nativeWelcomeShown){if(state.model==='pro')state.model='native';state.nativeWelcomeShown=true;save()}
  setTheme();populateVoices();window.speechSynthesis?.addEventListener?.('voiceschanged',populateVoices);$('modelSelect').value=state.model;$('autoSpeak').checked=state.autoSpeak;$('voiceRate').value=state.voiceRate;$('speedValue').textContent=state.voiceRate.toFixed(1)+'×';$('tinyCount').textContent=state.tinyExamples.length+' custom examples';$('backendUrl').value=state.backendUrl;$('passcode').value=state.passcode;$('memoryNotes').value=state.memory;setButtons();renderChats();renderMessages();renderFiles();renderArtifactLibrary();bindSuggestions();status();
+ updateNativeInfo();
+ $('trainNative').addEventListener('click',async()=>{
+  const output=$('nativeTrainingStatus'),button=$('trainNative');
+  if(!window.NOVANative){output.textContent='Model script missing; refresh NOVA.';return}
+  button.disabled=true;output.textContent='Training from scratch on this device…';
+  try{await window.NOVANative.train(e=>{output.textContent=e.label});output.textContent='Neural weights saved on this device.';updateNativeInfo();}
+  catch(error){output.textContent='Training error: '+error.message}finally{button.disabled=false}
+ });
+ $('teachNative').addEventListener('click',async()=>{
+  const phrase=$('nativeTeachExample').value.trim(),intent=$('nativeTeachCategory').value;
+  const output=$('nativeTrainingStatus'),button=$('teachNative');
+  if(!phrase)return notice('Enter a sentence to teach NOVA Native.');
+  if(!window.NOVANative)return notice('NOVA Native script is unavailable.');
+  button.disabled=true;output.textContent='Learning your example…';
+  try{await window.NOVANative.teach(phrase,intent);$('nativeTeachExample').value='';output.textContent='Example learned. Neural weights updated locally.';updateNativeInfo();}
+  catch(error){output.textContent=error.message}finally{button.disabled=false}
+ });
+ $('resetNative').addEventListener('click',()=>{
+  if(!confirm('Reset NOVA Native weights and examples on this device? Chats and artifacts will be kept.'))return;
+  window.NOVANative?.reset();updateNativeInfo();$('nativeTrainingStatus').textContent='Model reset. It will train again on next use.';
+ });
  $('modelSelect').addEventListener('change',e=>{state.model=e.target.value;if(!MODELS.includes(state.model))state.model=DEFAULT_MODEL;save();syncSettings();setButtons();notice(state.model==='native'?'NOVA Native selected · our own model, running locally':state.model==='nova-tiny'?'Original experimental model selected':state.model==='pro'?'NOVA Pro selected · hosted model':'Hosted model selected');});
  $('voiceButton').addEventListener('click',()=>{const C=window.SpeechRecognition||window.webkitSpeechRecognition;if(!C){notice('Speech input not available in this browser');return}if(recognition){recognition.stop();recognition=null;return}recognition=new C();recognition.lang='en-US';recognition.interimResults=false;recognition.continuous=false;$('voiceButton').classList.add('is-recording');recognition.onresult=e=>{$('messageInput').value+=($('messageInput').value?' ':'')+e.results[0][0].transcript;resizePrompt()};recognition.onerror=e=>notice('Microphone: '+(e.error||'unavailable'));recognition.onend=()=>{$('voiceButton').classList.remove('is-recording');recognition=null};try{recognition.start()}catch(e){notice('Could not start microphone')}});$('stopSpeech').addEventListener('click',()=>window.speechSynthesis?.cancel());
  $('installButton').addEventListener('click',installApp);$('installInSettings').addEventListener('click',installApp);
