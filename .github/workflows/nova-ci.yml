@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate NOVA frontend and backend
         run: node tests/nova_smoke.cjs
+      - name: Train and test NOVA Native entirely offline
+        run: node tests/nova_native.cjs
       - name: Validate original model and memory Python code
         run: python3 -m py_compile training/train_nova.py training/infer_nova.py training/memory_index.py
       - name: Test local memory indexing
