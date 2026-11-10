@@ -2,6 +2,14 @@
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
 
+## More NOVA Native requests and creative skills
+
+The original neural model recognizes **17 broad intent categories**—this is **not a limit of 17 messages**. NOVA Native and NOVA Tiny do not have a provider-side daily request quota. The optional personal daily-goal setting no longer stops local conversations, and its tracking range is up to one million/day; this is **not a guarantee of one million messages or a performance benchmark**.
+
+NOVA now offers **14 additional local project generators**: habit tracker, expense planner, Kanban board, flashcards, drawing pad, color palettes, random picker, calendar planner, invoice draft, survey builder, unit converter, recipe organizer, bookmarks and typing test. Together with the existing nine starter templates, the workspace supports **23 template types**; the original 17-class neural checkpoint is unchanged. Each generated project has editable HTML/CSS/JavaScript and can be previewed within NOVA.
+
+See [Expanded NOVA requests and skills](NOVA_EXPANDED_REQUESTS.md), the [modular skills source](nova-skills.js), and [automated tests](tests/nova_skills.cjs).
+
 ## NOVA original-model training pipeline
 
 The [training system](training/TRAINING_SYSTEM.md) now provides an **actual experimental training workflow** for the original NOVA decoder transformer:
