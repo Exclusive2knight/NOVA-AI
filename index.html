@@ -831,7 +831,7 @@ function init(){ensureChat();
  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});
  $('autoSpeak').addEventListener('change',e=>{state.autoSpeak=e.target.checked;save()});$('voiceRate').addEventListener('input',e=>{state.voiceRate=Number(e.target.value);$('speedValue').textContent=state.voiceRate.toFixed(1)+'×';save()});
  $('teachTiny').addEventListener('click',()=>{const question=prompt('Question to teach NOVA Tiny');if(!question)return;const answer=prompt('Response to teach NOVA Tiny');if(!answer)return;if(question.length>300||answer.length>1200||state.tinyExamples.length>=100)return notice('Example too long or limit reached');state.tinyExamples.push({prompt:question,answer});save();$('tinyCount').textContent=state.tinyExamples.length+' custom examples';notice('New local training example saved')});
- if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update().catch(()=>{})).catch(()=>{});
  $('testBackend').addEventListener('click',async()=>{
   let url;try{url=parseBackendUrl($('backendUrl').value)}catch(e){notice(e.message);return}
   const label=$('connectionStatus');label.textContent='Testing '+(url||'current website')+'…';
