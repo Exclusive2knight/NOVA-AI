@@ -4,7 +4,7 @@ NOVA is an experimental AI workshop built for chat, creating editable code files
 
 ## What is in this repository?
 
-- `index.html` — mobile-friendly **offline** NOVA workspace. This opens in a browser and supports local files, editing, previews and exports. It does not call an AI model.
+- `index.html` — mobile-friendly **offline** NOVA workspace. This opens in a browser and supports local files, editing, previews and exports. It can call your connected Cloudflare Worker when the server URL and passcode are configured; otherwise it runs as an offline workspace.
 - `cloudflare/NOVA_3_Phone_Deploy_Worker.js` — **full online NOVA app and backend**, including an embedded website, chat APIs, AI and search integrations.
 - `cloudflare/wrangler.jsonc` — Cloudflare Worker deployment configuration with a Workers AI binding called `AI`.
 - `LICENSE` — MIT License (copyright 2026 Exclusive2knight).
@@ -31,7 +31,7 @@ If using Wrangler on a laptop, run from the `cloudflare` folder with a compatibl
 npx wrangler deploy
 npx wrangler secret put NOVA_PASSCODE
 ```
-The config is in `cloudflare/wrangler.jsonc`. Only the Cloudflare-hosted site has the server APIs; GitHub Pages is **offline-workspace-only**.
+The config is in `cloudflare/wrangler.jsonc`. The browser can also call the deployed Cloudflare Worker from GitHub Pages using NOVA's configured server URL. GitHub Pages itself does not execute AI inference.
 
 ## Search, files, and limitations
 
@@ -65,7 +65,7 @@ The **microphone** control uses browser speech recognition where supported; micr
 
 ### Hosting status
 
-The GitHub Pages site provides the offline workspace and experimental local model, including saved files. The online features (hosted model chat, web reference search and AI-generated files) require the separate Cloudflare Worker. If the Cloudflare Worker has not been deployed, choosing Gemma/GLM/Qwen will show a setup message instead of pretending to answer.
+The GitHub Pages site provides the interface, local artifacts and experimental local model. It can connect to the separate Cloudflare Worker at the prefilled server URL for hosted-model chat, web reference search and AI-generated files. If the Cloudflare Worker has not been deployed, choosing Gemma/GLM/Qwen will show a setup message instead of pretending to answer.
 
 User data is stored in that browser by default. Speech input may involve the browser vendor's speech service; check your browser's privacy terms. AI chat sent to the Cloudflare backend shares submitted content with that service. Keep credentials in Worker secrets only.
 
@@ -80,7 +80,7 @@ GitHub Pages hosts the interface. Chat and Build using hosted AI models will onl
 
 ## NOVA Pro and local usage dashboard
 
-**NOVA Pro is a goal and a configuration—not a Claude Fable-level custom model.** The current free-compatible Pro route uses `@cf/qwen/qwen3.8-27b` with higher reasoning effort, a longer response budget, and response-style preferences. Qwen is a third-party hosted model; it is not trained by NOVA.
+**NOVA Pro is a goal and a configuration—not a Claude Fable-level custom model.** The current free-compatible Pro route uses `@cf/qwen/qwen3.8-27b` with adaptive reasoning effort, a longer response budget, and response-style preferences. Qwen is a third-party hosted model; it is not trained by NOVA.
 
 **Optional advanced hosted backend (PAID ONLY):** An eligible Cloudflare account owner can explicitly set `NOVA_ENABLE_PAID_PRO=true` on the **Worker server** to route Pro to `@cf/deepseek-ai/deepseek-v4.1-flash-1017`. This model requires Workers Paid or prepaid AI Gateway credits and can cause usage charges. It is **disabled by default**. Never add billing information, API secrets, or passcodes to GitHub or to browser code. Neither option has been evaluated as equal to Claude Fable.
 
@@ -99,8 +99,22 @@ The Settings panel includes model selection, response length and tone, creativit
 
 **Status:** The source was uploaded and the JavaScript passed syntax/unit-level checks. This does not verify an active Worker deployment, inference availability, cloud quotas, or phone microphone behavior.
 
+
+## NOVA Artifacts and long-answer continuation
+
+**NOVA Artifacts** are real editable text/code creations stored in the local browser workspace. Use **Build** to ask NOVA to create a project, or click **Create artifact** on a reply that contains a supported fenced code block. NOVA stores a snapshot (up to ten recent artifacts), displays an artifact card in the conversation, and lets you use **Preview**, **Edit**, and **Download ZIP**. The Artifacts gallery is available inside Files. HTML/CSS/JS previews run in sandboxed iframes inside NOVA, not on an unrestricted server. The backup import/export carries artifact snapshots.
+
+**Long answers:** NOVA now reads streaming finish reasons and attempts up to two extra continuation requests when the provider reports an output-token limit. Each additional request uses provider resources and can be blocked by quota. Use the **Continue** action under a response for additional output. Existing chat history is kept locally; recent messages plus selected relevant older excerpts are sent to the hosted model. This may improve continuity but is not perfect recall, and cannot guarantee unlimited length or infinite context.
+
+**Reasoning:** NOVA Pro defaults to quick reasoning on short questions instead of spending a large budget on hidden reasoning. Settings offers Auto, Quick, Standard, and Deep. The Extended response option requests a larger output allowance, which Cloudflare may limit. Provider model availability, charges and streaming truncation still apply.
+
+**Original NOVA research:** [Training profiles](training/train_nova.py), [checkpoint inference](training/infer_nova.py), [local SQLite document retrieval](training/memory_index.py), and [long-memory roadmap](training/LONG_MEMORY_ROADMAP.md) are included. NOVA Tiny, Mini and Core have from-scratch **training code**, but their checkpoints are **not** pretrained, not integrated into Cloudflare, and not frontier models. The browser's NOVA Tiny is a separate word-transition experiment. The SQLite index is a local prototype; it has not been tested at a billion-token scale and does not provide a billion-token context window.
+
+**Tests:** [GitHub Actions checks](.github/workflows/nova-ci.yml) validate the frontend, Worker bundle, training Python syntax, and the document index. GitHub Pages deployment only verifies static hosting; neither test proves paid/free Cloudflare inference is working.
+
+
 ## Project status
 
-Source uploaded to GitHub. The root page is an **offline workspace** until GitHub Pages is enabled. **Live AI is not deployed** until the Cloudflare Worker is published and configured.
+Source uploaded to GitHub. GitHub Pages has deployed successfully. Hosted AI works only after the separate Cloudflare Worker is deployed and correctly configured with a compatible model and private passcode. No live inference test was completed from ChatGPT.
 
 MIT licensed — see [LICENSE](LICENSE).
