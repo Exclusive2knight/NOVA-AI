@@ -10,6 +10,7 @@ Resume: python training/train_starter_pack.py --zip NOVA_training_data_v1.zip --
 This is a small byte-level research model; it will NOT write like a frontier LLM.
 """
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -67,6 +68,7 @@ def run(args):
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.set_num_threads(min(4,torch.get_num_threads()))
+    data_sha256=hashlib.sha256(Path(args.zip).read_bytes()).hexdigest()
     train_docs=load_split(args.zip,"train")
     valid_docs=load_split(args.zip,"validation")
     test_docs=load_split(args.zip,"test")
@@ -74,6 +76,8 @@ def run(args):
     valid=tokenize(valid_docs)
     if args.resume:
         checkpoint=torch.load(args.resume,map_location="cpu",weights_only=True)
+        if checkpoint.get("source_zip_sha256") not in (None,data_sha256):
+            raise ValueError("The starter dataset ZIP differs from the resumed checkpoint")
         config=checkpoint["config"]
         steps_done=int(checkpoint.get("training_steps",0))
     else:
@@ -88,6 +92,11 @@ def run(args):
     if args.resume:
         net.load_state_dict(checkpoint["model"],strict=True)
     opt=torch.optim.AdamW(net.parameters(),lr=args.lr)
+    restored_optimizer=bool(args.resume and "optimizer" in checkpoint)
+    if restored_optimizer:
+        opt.load_state_dict(checkpoint["optimizer"])
+        for group in opt.param_groups:
+            group["lr"]=args.lr
     start=evaluate(net,valid,config["context"],device)
     print(json.dumps({"phase":"start","step":steps_done,"validation_cross_entropy":round(start,4),
         "training_examples":len(train_docs),"validation_examples":len(valid_docs),
@@ -114,6 +123,7 @@ def run(args):
     path.parent.mkdir(parents=True,exist_ok=True)
     checkpoint={
         "model":net.cpu().state_dict(),"config":config,"profile":args.profile,
+        "optimizer":opt.state_dict(),"source_zip_sha256":data_sha256,
         "training_steps":steps_done+args.steps,
         "dataset":"NOVA Starter Training Dataset v1 (original CC0)",
         "examples":{"train":len(train_docs),"validation":len(valid_docs),"test_not_used":len(test_docs)},
@@ -124,6 +134,7 @@ def run(args):
            "validation_loss_after":round(end,4),
            "improvement_percent":round(100*(start-end)/start,2),
            "training_steps_total":steps_done+args.steps,
+           "optimizer_restored_from_previous_checkpoint":restored_optimizer,
            "token_predictions_in_this_run":args.steps*args.batch*config["context"],
            "note":"Synthetic held-out validation differs from independent real-world reasoning evaluation. Cannot claim trillions of unique tokens or a capable chatbot."}
     report_file=path.with_suffix(".training-report.json")
