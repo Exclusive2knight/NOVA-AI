@@ -70,6 +70,14 @@ The GitHub Pages site provides the offline workspace and experimental local mode
 User data is stored in that browser by default. Speech input may involve the browser vendor's speech service; check your browser's privacy terms. AI chat sent to the Cloudflare backend shares submitted content with that service. Keep credentials in Worker secrets only.
 
 
+## Live GitHub Pages website and Cloudflare AI connection
+
+**Public NOVA website:** https://exclusive2knight.github.io/NOVA-AI/
+
+**Connect the AI to this website:** Follow [CONNECT_CLOUDFLARE.md](CONNECT_CLOUDFLARE.md). Deploy the Worker from the `cloudflare` subfolder of this repository via Cloudflare's GitHub import, set the `AI` binding and `NOVA_PASSCODE` secret on Cloudflare, then open NOVA **Settings → Connection & installation** and paste your own `https://…workers.dev` address. Select **Test AI server connection**, enter your passcode locally, and save.
+
+GitHub Pages hosts the interface. Chat and Build using hosted AI models will only function after the Cloudflare Worker is deployed. The Worker explicitly allows API requests from `https://exclusive2knight.github.io` but not arbitrary origins. **Never commit passcodes, passwords, or API keys to GitHub.**
+
 ## NOVA Pro and local usage dashboard
 
 **NOVA Pro is a goal and a configuration—not a Claude Fable-level custom model.** The current free-compatible Pro route uses `@cf/qwen/qwen3.8-27b` with higher reasoning effort, a longer response budget, and response-style preferences. Qwen is a third-party hosted model; it is not trained by NOVA.
