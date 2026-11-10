@@ -2,6 +2,14 @@
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
 
+## NOVA Studio — redesigned website and installable app
+
+NOVA now has a polished original interface for chat and editable Artifacts, with a desktop focus mode, smooth loading/entrance animations, a responsive mobile layout, dark/light themes, spacing and motion preferences, keyboard shortcuts, and useful accessibility options. The same site installs as a Progressive Web App on supported devices. It is **not** a native App Store/Play Store package.
+
+**Slang and typos:** The local [NOVA language adapter](nova-language.js) expands supported abbreviations and repairs common task-word misspellings, discloses its interpretation, and asks for clarification when wording is too uncertain. This does **not** imply NOVA understands all slang or has general language-model intelligence. Its original neural classifier and trained weights remain the core of NOVA Native.
+
+**Local creations:** NOVA Native can now create basic interactive quiz projects as well as websites, portfolios, task apps, note apps, timers, calculators, dashboards and small games. The **Activity** panel shows operations that really occurred. Full details and settings: [NOVA Studio guide](NOVA_STUDIO.md). Regression suite: `tests/nova_studio.cjs`.
+
 ## NOVA Native 2 — our own trained offline AI
 
 **NOVA Native 2.0** is our original on-device neural intent model with **50,033 trained parameters**, now loaded instantly from an approximately **131 KiB** compressed checkpoint in `nova-native-weights.js`. It recognizes 17 task categories and can route supported requests to local tools that create editable websites and mini-app artifacts—no Cloudflare request, paid API, or passcode required.
