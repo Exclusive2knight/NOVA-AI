@@ -72,7 +72,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .suggestions button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;min-height:69px;font-size:13px;font-weight:630;padding:16px 19px;box-shadow:0 3px 12px #00000004}
 .suggestions button span{font-size:18px;color:var(--accent)}
 .suggestions button:hover{background:var(--nova-soft);border-color:var(--accent);transform:translateY(-1px)}
-.message{gap:13px;margin-bottom:25px;animation:nova-appear .26s ease both}
+.message{gap:13px;margin-bottom:25px;animation:none}.message.fresh{animation:nova-appear .26s ease both}
 .avatar{width:34px;height:34px;border-radius:12px;background:var(--nova-primary);color:var(--nova-primary-ink);font-weight:750;font-size:15px}
 .message.user .bubble{background:var(--purple);border:1px solid var(--line);border-radius:19px 19px 6px 19px;padding:13px 17px}
 .message.assistant .bubble{padding:6px 1px 0;font-size:14.25px;line-height:1.82;max-width:770px}
@@ -182,3 +182,13 @@ dialog::backdrop{background:rgba(5,10,18,.65);backdrop-filter:blur(5px)}
  .send-button{width:39px;height:39px}
  .dialog-content{padding:14px}
 }
+
+/* A subtle, truthful activity signal while a local/hosted response is being produced. */
+.message.is-processing .bubble::after{
+ content:"";display:inline-block;width:13px;height:13px;margin-left:8px;vertical-align:middle;
+ border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+ animation:nova-spinner .9s linear infinite;
+}
+@keyframes nova-spinner{to{transform:rotate(360deg)}}
+:root[data-motion="off"] .message.is-processing .bubble::after{animation:none}
+@media(prefers-reduced-motion:reduce){.message.is-processing .bubble::after{animation:none}}
