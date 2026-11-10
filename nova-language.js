@@ -104,7 +104,10 @@ function respond(native,prompt,opts={}){
  else if(hint==='timer'&&!/\btimer\b/i.test(cleaned))cleaned='Make a timer: '+cleaned;
  else if(hint==='quiz'&&!/\bquiz\b/i.test(cleaned))cleaned='Make a quiz: '+cleaned;
  else if(hint==='dashboard'&&!/\bdashboard\b/i.test(cleaned))cleaned='Build a dashboard: '+cleaned;
- const result=native.respond(cleaned,{build,onStep});
+ else if(hint==='quiz'&&!/\bquiz\b/i.test(cleaned))cleaned='Make a quiz: '+cleaned;
+ const asksForCreation=/\b(build|make|create|design|generate|put together|set up|mock up|make me|need a|need an|want a|want an)\b/i.test(cleaned);
+ const shouldBuild=build||(asksForCreation&&['website','portfolio','todo','notes','timer','calculator','dashboard','game','quiz'].includes(hint));
+ const result=native.respond(cleaned,{build:shouldBuild,onStep});
  // Return the interpretation as transparent metadata, not as an invented chain of thought.
  if(understood.edits.length)result.interpretation=understood.text;
  return result;
