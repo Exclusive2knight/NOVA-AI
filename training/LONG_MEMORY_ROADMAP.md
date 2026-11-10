@@ -8,6 +8,23 @@ A **1,000,000,000-token direct context window** is not supported by NOVA today a
 
 An achievable intermediate goal is a **searchable library of documents representing up to a billion accumulated tokens**. This requires persistent storage, indexing, retrieval, relevance ranking, user privacy, and context budgeting. It is **not identical** to a model considering every one of those tokens simultaneously.
 
+## NOVA's 1 TB / 10 TB searchable-memory targets (November 10, 2026)
+
+The local [`memory_index.py`](memory_index.py) now supports **1 TB (default) or 10 TB** as an **indexed-source-byte quota** via `--target-tb`. These are *limits for eligible text/code files*, not memory that has already been allocated or loaded, and not a validated claim that the software has indexed a terabyte. The SQLite database and FTS5 index themselves can consume significantly more disk space than the original sources. Actual capacity depends on disk resources, filesystem and SQLite performance.
+
+The updated index walks directories lazily (does not collect every path in RAM), ingests files incrementally, tracks each source's byte size and modification timestamp, skips unchanged files, and commits every file separately. It does not upload your texts, fetch the web or activate permanent storage automatically. It currently supports selected text/code formats only, with a 128 MB per-file guard; it does not index scanned PDFs, images, videos or ZIP contents. A 10 TB target especially needs storage provisioning, maintenance/backups, privacy review, index sharding, monitoring and performance testing.
+
+```sh
+python training/memory_index.py ingest ./my_notes --db nova-memory.db --target-tb 1
+python training/memory_index.py query "What did I write about my game?" --db nova-memory.db
+python training/memory_index.py stats --db nova-memory.db --target-tb 1
+# Optional higher quota; does not allocate 10 TB:
+python training/memory_index.py ingest ./my_notes --db nova-memory.db --target-tb 10
+python training/test_memory_index.py
+```
+
+**Important distinction:** searchable long-term memory retrieves a few matching passages to pass into an actual model request. It is *not* a 1 TB or 10 TB attention/context window. NOVA Core Tiny retains its 64-byte-token direct context and NOVA Studio's hosted models retain provider context limits. This CLI memory index is **not yet connected to the hosted NOVA chat app**, and the code has not been measured at terabyte scale. The goal is to build an incremental foundation, not announce a terabyte-capable deployed system.
+
 ## What was implemented
 
 - `train_nova.py`: decoder-only byte-token transformer with randomly initialized weights and profiles tiny (64-token experimental context), mini (128), core (256). Scale training only with appropriate data and computing resources.
