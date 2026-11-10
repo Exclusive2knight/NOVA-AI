@@ -246,7 +246,7 @@ function renderMessages(){const wrap=$('messages'),chat=activeChat();wrap.replac
   const list=document.createElement('ol');
   for(const entry of m.steps.slice(-30)){const item=document.createElement('li');item.textContent=typeof entry==='string'?entry:String(entry.label||entry);list.append(item)}
   details.append(list);outer.append(details);
- }if(m.sources?.length){const sources=document.createElement('div');sources.className='source-links';for(const s of m.sources.slice(0,5)){try{const u=new URL(s.url);if(!/^https?:$/.test(u.protocol))continue;const a=document.createElement('a');a.textContent=s.title?.slice(0,43)||u.hostname;a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';sources.append(a)}catch(e){}}outer.append(sources)}if(m.role==='assistant'){const actions=document.createElement('div');actions.className='msg-actions';const cp=document.createElement('button');cp.textContent='Copy';cp.onclick=()=>navigator.clipboard?.writeText(m.content||'').then(()=>notice('Copied')).catch(()=>notice('Copy is unavailable'));actions.append(cp);const speakBtn=document.createElement('button');speakBtn.textContent='Listen';speakBtn.onclick=()=>speak(m.content||'');actions.append(speakBtn);
+ }if(m.sources?.length){const sources=document.createElement('div');sources.className='source-links';for(const s of m.sources.slice(0,5)){try{const u=new URL(s.url);if(!/^https?:$/.test(u.protocol))continue;const a=document.createElement('a');a.textContent=s.title?.slice(0,43)||u.hostname;a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';sources.append(a)}catch(e){}}outer.append(sources)}if(m.role==='assistant'){const actions=document.createElement('div');actions.className='msg-actions';const cp=document.createElement('button');cp.textContent='Copy';cp.onclick=()=>navigator.clipboard?.writeText(m.content||'').then(()=>notice('Copied')).catch(()=>notice('Copy is unavailable'));actions.append(cp);const review=document.createElement('button');review.textContent='Review answer';review.title='Prepare a NOVA Pro self-review. This is not an independent fact check.';review.onclick=()=>prepareAnswerReview(m);actions.append(review);const speakBtn=document.createElement('button');speakBtn.textContent='Listen';speakBtn.onclick=()=>speak(m.content||'');actions.append(speakBtn);
  for(const [label,rating] of [['Helpful','helpful'],['Needs work','needs-work']]){
   const fb=document.createElement('button');fb.textContent=(m.feedbackRating===rating?'✓ ':'')+label;fb.title='Save anonymous feedback locally; no conversation content is uploaded';
   fb.setAttribute('aria-pressed',String(m.feedbackRating===rating));
@@ -272,6 +272,18 @@ function renderMessages(){const wrap=$('messages'),chat=activeChat();wrap.replac
   }
  }
  outer.append(actions)}row.append(outer);wrap.append(row)}wrap.scrollTop=wrap.scrollHeight;}
+function prepareAnswerReview(item){
+ if(busy)return notice('Finish the current answer before reviewing');
+ const chat=activeChat(),index=chat?.messages.indexOf(item)??-1;
+ if(index<0||item.role!=='assistant')return notice('Answer could not be found');
+ const previous=[...chat.messages.slice(0,index)].reverse().find(m=>m.role==='user');
+ if(!previous)return notice('Original question not found');
+ const proposed='Review your earlier response for reasoning errors, unsupported claims, missing steps, and incorrect assumptions. Do not claim to have checked external facts unless you actually use Web sources. First explain any mistakes and then supply a corrected, clearer answer. This is a self-review, not an independent verification.\n\nOriginal request: '+String(previous.content||'').slice(0,2000)+'\n\nEarlier response: '+String(item.content||'').slice(0,3800);
+ state.model='pro';state.build=false;
+ $('modelSelect').value='pro';save();syncSettings();setButtons();status();
+ $('messageInput').value=proposed;resizePrompt();tab('chat');$('messageInput').focus();
+ notice('Review draft prepared · Press Send to use NOVA Pro and your free AI allowance');
+}
 function bindSuggestions(){document.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{const s=b.dataset.suggest;$('messageInput').value=s;resizePrompt();$('messageInput').focus()});document.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>starter());}
 function resizePrompt(){const t=$('messageInput');t.style.height='auto';t.style.height=Math.min(160,Math.max(44,t.scrollHeight))+'px';}
 function rateAnswerLocally(message,rating){
