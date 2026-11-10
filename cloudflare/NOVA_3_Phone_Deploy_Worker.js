@@ -106,7 +106,7 @@ async function research(query,env){
     if(!res.ok)throw Error('Brave search service unavailable ('+res.status+')');
     const obj=await res.json();
     return (obj.web?.results||[]).slice(0,5).map(r=>({
-      title:String(r.title||'Web source').replace(/<[^>]*>/g,' ').slice(0,160),
+      title:String(r.title||'Web source').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,160),
       url:String(r.url||'').slice(0,800),
       content:String(r.description||r.extra_snippets?.[0]||'').replace(/<[^>]*>/g,' ').slice(0,950)
     })).filter(s=>/^https:\/\//i.test(s.url));
