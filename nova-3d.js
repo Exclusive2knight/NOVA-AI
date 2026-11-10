@@ -266,5 +266,23 @@ function build(prompt,options={}){
  const scene=makeScene(String(prompt).slice(0,1500),options);
  return {scene,bytes:writeGLB(scene),filename:slug(scene.name)+'.glb'};
 }
-root.NOVA3D={version:'1.0',build,makeScene,writeGLB,detect};
+function buildFromPlan(prompt,plan,options={}){
+ const base=makeScene(prompt,options);
+ if(!plan||!Array.isArray(plan.parts))throw Error('AI plan did not provide usable 3D parts');
+ const allowedShapes=new Set(['box','cylinder','sphere']);
+ const allowedMat=new Set(Object.keys(base.materials)),parts=[];
+ for(const p of plan.parts.slice(0,80)){
+  if(!p||!allowedShapes.has(p.shape)||!allowedMat.has(p.material))continue;
+  const t=p.translation,scale=p.scale;
+  if(!Array.isArray(t)||t.length!==3||!Array.isArray(scale)||scale.length!==3)continue;
+  const values=[...t,...scale].map(Number);
+  if(values.some(v=>!Number.isFinite(v)||Math.abs(v)>80)||values.slice(3).some(v=>v<.025))continue;
+  parts.push({name:String(p.name||p.shape).slice(0,65),shape:p.shape,material:p.material,
+   translation:values.slice(0,3),scale:values.slice(3,6)});
+ }
+ if(parts.length<3)throw Error('Custom GLB layout has too few valid parts');
+ const scene={...base,parts,notes:'Approximate AI-planned primitive geometry. Inspect and refine in Blender; not a finished high-detail asset.'};
+ return {scene,bytes:writeGLB(scene),filename:slug(prompt)+'-ai-starter.glb'};
+}
+root.NOVA3D={version:'1.1',build,buildFromPlan,makeScene,writeGLB,detect};
 })(typeof window!=='undefined'?window:globalThis);
