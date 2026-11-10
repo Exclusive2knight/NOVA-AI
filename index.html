@@ -191,12 +191,28 @@ function setDrawer(open){$('drawer').classList.toggle('open',open);$('overlay').
 function tab(which){currentTab=which;if(which==='settings'){$('settingsDialog').showModal();return}if(which==='history'){setDrawer(true);return}$('shell').querySelector('.right').classList.toggle('show-files',which==='files');document.querySelectorAll('.mobile-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===which));if(which==='files')renderFiles();}
 function activeChat(){return state.chats.find(c=>c.id===state.active)||null}
 function ensureChat(){let c=activeChat();if(!c){c={id:id(),title:'New conversation',messages:[],updated:Date.now()};state.chats.unshift(c);state.active=c.id;}return c}
-function newChat(){state.active=null;ensureChat();save();renderChats();renderMessages();setDrawer(false);tab('chat');$('messageInput').focus();}
+function newChat(){if(busy)return notice('Finish or stop the current response first');state.active=null;ensureChat();save();renderChats();renderMessages();setDrawer(false);tab('chat');$('messageInput').focus();}
 function openChat(chatId){if(busy)return notice('Finish the current reply first');state.active=chatId;save();renderChats();renderMessages();setDrawer(false);tab('chat')}
 function renderChats(){const c=activeChat();$('headerTitle').textContent=c?.title||'New conversation';const wrap=$('chatList');wrap.replaceChildren();const q=$('chatSearch').value.trim().toLowerCase();for(const item of [...state.chats].sort((a,b)=>b.updated-a.updated).filter(t=>t.title.toLowerCase().includes(q))){const r=document.createElement('div');r.className='chat-row'+(item.id===state.active?' current':'');const b=document.createElement('button');b.className='chat-name';b.textContent=item.title;b.onclick=()=>openChat(item.id);const del=document.createElement('button');del.className='remove';del.textContent='×';del.title='Delete conversation';del.setAttribute('aria-label','Delete '+item.title);del.onclick=()=>{if(busy)return;state.chats=state.chats.filter(c=>c.id!==item.id);if(state.active===item.id)state.active=state.chats[0]?.id||null;save();renderChats();renderMessages()};r.append(b,del);wrap.append(r);}}
 function lineText(parent,s){let remainder=String(s||'');const parts=remainder.split(/(```[^\n]*\n[\s\S]*?```)/g);for(const p of parts){if(p.startsWith('```')&&p.endsWith('```')){const n=p.indexOf('\n');const pre=document.createElement('pre');pre.style.cssText='white-space:pre;overflow:auto;background:#272332;color:#f6eefc;padding:13px;border-radius:12px;font-size:12px;line-height:1.5;max-width:100%';const code=p.slice(n+1,-3);pre.textContent=code;parent.append(pre);const copy=document.createElement('button');copy.textContent='Copy code';copy.style.cssText='border:0;background:transparent;color:#7558bc;padding:0 6px 8px;font-size:11px';copy.onclick=()=>navigator.clipboard?.writeText(code).then(()=>notice('Code copied')).catch(()=>notice('Select and copy this code'));parent.append(copy);}else if(p)parent.append(document.createTextNode(p));}}
 function renderMessages(){const wrap=$('messages'),chat=activeChat();wrap.replaceChildren();if(!chat?.messages.length){wrap.append(introTemplate.cloneNode(true));bindSuggestions();return}
- for(const m of chat.messages){const row=document.createElement('div');row.className='message '+m.role;if(m.role==='assistant'){const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent='N';row.append(avatar)}const outer=document.createElement('div');outer.className='bubble';lineText(outer,m.content||'');if(m.sources?.length){const sources=document.createElement('div');sources.className='source-links';for(const s of m.sources.slice(0,5)){try{const u=new URL(s.url);if(!/^https?:$/.test(u.protocol))continue;const a=document.createElement('a');a.textContent=s.title?.slice(0,43)||u.hostname;a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';sources.append(a)}catch(e){}}outer.append(sources)}if(m.role==='assistant'){const actions=document.createElement('div');actions.className='msg-actions';const cp=document.createElement('button');cp.textContent='Copy';cp.onclick=()=>navigator.clipboard?.writeText(m.content||'').then(()=>notice('Copied')).catch(()=>notice('Copy is unavailable'));actions.append(cp);const speakBtn=document.createElement('button');speakBtn.textContent='Listen';speakBtn.onclick=()=>speak(m.content||'');actions.append(speakBtn);outer.append(actions)}row.append(outer);wrap.append(row)}wrap.scrollTop=wrap.scrollHeight;}
+ for(const m of chat.messages){const row=document.createElement('div');row.className='message '+m.role;if(m.role==='assistant'){const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent='N';row.append(avatar)}const outer=document.createElement('div');outer.className='bubble';lineText(outer,m.content||'');if(m.sources?.length){const sources=document.createElement('div');sources.className='source-links';for(const s of m.sources.slice(0,5)){try{const u=new URL(s.url);if(!/^https?:$/.test(u.protocol))continue;const a=document.createElement('a');a.textContent=s.title?.slice(0,43)||u.hostname;a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';sources.append(a)}catch(e){}}outer.append(sources)}if(m.role==='assistant'){const actions=document.createElement('div');actions.className='msg-actions';const cp=document.createElement('button');cp.textContent='Copy';cp.onclick=()=>navigator.clipboard?.writeText(m.content||'').then(()=>notice('Copied')).catch(()=>notice('Copy is unavailable'));actions.append(cp);const speakBtn=document.createElement('button');speakBtn.textContent='Listen';speakBtn.onclick=()=>speak(m.content||'');actions.append(speakBtn);
+ if(m.truncated||m.content?.length>400){
+  const more=document.createElement('button');more.className='answer-more';more.textContent='Continue →';more.title='Continue the answer with a new AI request';more.onclick=()=>continueAnswer(chat.messages.indexOf(m));actions.append(more);
+ }
+ if(m.artifactId){
+  const artifact=state.artifacts.find(x=>x.id===m.artifactId);
+  if(artifact){
+   const card=document.createElement('div');card.className='artifact-card';
+   const name=document.createElement('div');name.className='artifact-card-title';name.textContent='◇ '+artifact.title;
+   const controls=document.createElement('div');controls.className='artifact-card-actions';
+   for(const [label,action] of [['Preview',()=>openArtifact(artifact.id,'preview')],['Edit',()=>openArtifact(artifact.id,'code')],['Download ZIP',()=>downloadArtifact(artifact.id)]]){
+    const btn=document.createElement('button');btn.textContent=label;btn.onclick=action;controls.append(btn);
+   }
+   card.append(name,controls);outer.append(card);
+  }
+ }
+ outer.append(actions)}row.append(outer);wrap.append(row)}wrap.scrollTop=wrap.scrollHeight;}
 function bindSuggestions(){document.querySelectorAll('[data-suggest]').forEach(b=>b.onclick=()=>{const s=b.dataset.suggest;$('messageInput').value=s;resizePrompt();$('messageInput').focus()});document.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>starter());}
 function resizePrompt(){const t=$('messageInput');t.style.height='auto';t.style.height=Math.min(160,Math.max(44,t.scrollHeight))+'px';}
 function setButtons(){renderUsage();const s=$('searchToggle'),b=$('buildToggle');s.setAttribute('aria-pressed',String(!!state.search));b.setAttribute('aria-pressed',String(!!state.build));$('sendBtn').textContent=busy?'■':'↑';$('sendBtn').title=busy?'Stop':'Send';$('usageNote').textContent=(state.model==='nova-tiny'?'NOVA Tiny is an offline experimental word-transition model, not a general AI.':modelReady?(state.build?'Build mode creates editable files in your workspace.':state.search&&webReady?(searchMode==='web'?'Full web search is on · Responses may link to sources.':'Wikipedia reference search is on · Not a full web search.'):'AI connected · Uses Cloudflare Workers AI free-tier allocation.'):'Offline workspace · Deploy to Cloudflare to enable real AI responses.');}
@@ -295,8 +311,76 @@ async function continueAnswer(index){
 }
 
 async function buildRequest(messages,attachments){const response=await fetch(apiEndpoint('/api/build'),{method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},body:JSON.stringify({messages,memory:state.memory,model:state.model,preferences:requestPreferences(),files:Object.entries(state.files).slice(0,14).map(([path,content])=>({path,content:content.slice(0,16000)})),attachments}),signal:aborter.signal});let data={};try{data=await response.json()}catch(e){}if(!response.ok)throw new Error(data.error||'Build failed ('+response.status+')');return data}
-async function sendMessage(){if(busy){aborter?.abort();busy=false;setButtons();return}const input=$('messageInput'),s=input.value.trim();if(!s)return;if(s.length>12000)return notice('Message must be under 12,000 characters');if(state.enforceLimit&&usageStats().today>=state.dailyLimit)return notice('Your personal daily goal is reached. Change your limit in Settings or try again after midnight UTC.');const sentModel=state.model;const c=ensureChat();if(c.messages.length===0)c.title=s.slice(0,55);c.messages.push({role:'user',content:s,attachments:pendingFiles.map(f=>f.name)});c.updated=Date.now();input.value='';resizePrompt();const att=pendingFiles;pendingFiles=[];updateAttach();renderChats();if(state.model==='nova-tiny'){c.messages.push({role:'assistant',content:tinyReply(s)});recordUsage(sentModel);save();renderMessages();if(state.autoSpeak)speak(c.messages[c.messages.length-1].content);return}if(!modelReady){c.messages.push({role:'assistant',content:'NOVA’s online AI is not connected yet. The workspace and file editor work right now, but AI chat, automatic project building and web research need your Cloudflare Worker deployed with an AI binding. Open Settings to see the connection status.\n\nYou can still tap “Try a site template” and edit or export real files offline.'});save();renderMessages();return}
- busy=true;let completed=false;aborter=new AbortController();c.messages.push({role:'assistant',content:state.search?'Searching and thinking…':state.build?'Generating project files…':'Thinking…'});save();renderMessages();setButtons();try{const msgs=c.messages.slice(0,-1).slice(-14).map(m=>({role:m.role,content:m.content}));if(state.build){const data=await buildRequest(msgs,att);if(Array.isArray(data.files)&&data.files.length){for(const file of data.files){if(validPath(file.path)&&typeof file.content==='string')state.files[file.path]=file.content.slice(0,100000)}const first=data.files.find(f=>validPath(f.path));if(first)chosenFile=first.path;renderFiles();}c.messages[c.messages.length-1].content=(data.message||'Project generated.')+(data.files?.length?'\n\nCreated/updated: '+data.files.map(f=>f.path).join(', '):'');completed=true;}else{const data=await chatRequest(msgs,att);c.messages[c.messages.length-1].content=data.content||'No text was returned by the AI. Try again.';c.messages[c.messages.length-1].sources=data.sources;completed=!!data.content;if(state.autoSpeak)speak(data.content||'');}}catch(e){c.messages[c.messages.length-1].content=e.name==='AbortError'?'Stopped.':('Could not finish: '+e.message)}finally{if(completed)recordUsage(sentModel);busy=false;aborter=null;c.updated=Date.now();save();renderChats();renderMessages();setButtons();}}
+
+async function sendMessage(){
+ if(busy){aborter?.abort();notice('Stopping current reply…');return}
+ const input=$('messageInput'),promptText=input.value.trim();if(!promptText)return;
+ if(promptText.length>12000)return notice('Message must be under 12,000 characters');
+ if(state.enforceLimit&&usageStats().today>=state.dailyLimit)return notice('Daily activity goal reached. Adjust Settings to continue.');
+ const chat=ensureChat(),sentModel=state.model;
+ if(chat.messages.length===0)chat.title=promptText.slice(0,55);
+ chat.messages.push({role:'user',content:promptText,attachments:pendingFiles.map(f=>f.name)});
+ chat.updated=Date.now();input.value='';resizePrompt();
+ const attachments=pendingFiles;pendingFiles=[];updateAttach();renderChats();
+ if(sentModel==='nova-tiny'){
+  chat.messages.push({role:'assistant',content:tinyReply(promptText)});recordUsage(sentModel);save();renderMessages();
+  if(state.autoSpeak)speak(chat.messages.at(-1).content);return;
+ }
+ if(!modelReady){
+  chat.messages.push({role:'assistant',content:'The hosted AI is not connected yet. Check Cloudflare Settings, the Worker address, and NOVA_PASSCODE. Your local files and NOVA Tiny remain available.'});
+  save();renderMessages();return;
+ }
+ busy=true;aborter=new AbortController();
+ const outgoing=buildContext(chat.messages,47500);
+ const answer={role:'assistant',content:'Preparing your reply…',truncated:false};
+ chat.messages.push(answer);save();renderMessages();setButtons();
+ let completed=false;
+ try{
+  if(state.build){
+   const data=await buildRequest(outgoing,attachments);
+   const files=(Array.isArray(data.files)?data.files:[]).filter(f=>validPath(f.path)&&typeof f.content==='string');
+   if(files.length){
+    const artifact=storeArtifact(files,chat.title);answer.artifactId=artifact.id;
+    chosenFile=files.find(x=>/\.html$/.test(x.path))?.path||files[0].path;
+    renderFiles();
+   }
+   answer.content=(data.message||'Project generated.')+(files.length?'\n\nCreated or updated: '+files.map(f=>f.path).join(', '):'');
+   completed=true;recordUsage(sentModel);
+  }else{
+   let lastPaint=0,combined='',partCount=0,finished=false,finishReason='';
+   let requestMessages=outgoing;
+   while(partCount<3){
+    const base=combined;
+    const result=await chatRequest(requestMessages,partCount===0?attachments:[],part=>{
+     answer.content=appendContinuation(base,part);
+     if(Date.now()-lastPaint>230){lastPaint=Date.now();renderMessages();}
+    },{continuation:partCount>0});
+    if(!result.content&&partCount===0){
+     throw Error('The model returned no visible text. Try GLM 4.7 or reduce the reasoning level in Settings.');
+    }
+    if(!result.content&&partCount>0)break;
+    combined=appendContinuation(combined,result.content);
+    answer.content=combined;
+    answer.sources=answer.sources?.length?answer.sources:result.sources;
+    answer.truncated=result.truncated;finishReason=result.finishReason;
+    completed=true;recordUsage(sentModel);
+    partCount++;
+    if(!result.truncated||state.model==='nova-tiny')break;
+    if(state.enforceLimit&&usageStats().today>=state.dailyLimit)break;
+    requestMessages=continuationMessages(chat,chat.messages.length-1);
+   }
+   if(answer.truncated)notice('Long reply reached a model limit. Tap Continue on the answer for more.');
+   if(state.autoSpeak&&combined)speak(combined);
+  }
+ }catch(e){
+  const problem=e.name==='AbortError'?'Stopped.':('Could not finish: '+(e.message||String(e)));
+  answer.content=completed?answer.content+'\n\n'+problem:problem;
+  answer.truncated=completed&&e.name==='AbortError';
+ }finally{
+  busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons();
+ }
+}
+
 function validPath(p){return typeof p==='string'&&p.length>0&&p.length<=130&&!p.startsWith('/')&&!p.startsWith('.')&&!p.includes('..')&&!p.includes('\\')&&/^[a-zA-Z0-9_\-/ .]+\.[a-zA-Z0-9]{1,9}$/.test(p)}
 function renderFiles(){const wrap=$('fileList');wrap.replaceChildren();const names=Object.keys(state.files).sort();if(!names.length){const msg=document.createElement('div');msg.className='empty-files';msg.textContent='No project files yet. Turn on Build and ask NOVA to make something, or use the starter template.';wrap.append(msg)}for(const name of names){const b=document.createElement('button');b.className='file-row'+(chosenFile===name?' active':'');b.textContent='▤  '+name;b.onclick=()=>{chosenFile=name;save();renderFiles()};wrap.append(b)}if(!chosenFile||!(chosenFile in state.files))chosenFile=names[0]||null;const editor=$('codeEditor');editor.disabled=!chosenFile;editor.value=chosenFile?state.files[chosenFile]:'';$('editingName').textContent=chosenFile||'No file selected';$('deleteFile').disabled=$('downloadFile').disabled=!chosenFile;save();}
 function newFile(){const name=prompt('File name (example: index.html)', 'new-file.html');if(name===null)return;const p=name.trim();if(!validPath(p))return notice('Use a simple relative filename ending with an extension');if(p in state.files)return notice('That filename already exists');state.files[p]='';chosenFile=p;save();renderFiles();tab('files')}
