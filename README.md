@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **NEW NOVA Create Studio:** [Generate pictures and genuine downloadable GLB starter models](NOVA_CREATE_STUDIO.md) from one prompt. Image creation runs through Cloudflare FLUX when connected; basic GLB creation works offline on your phone. An optional Pro mode plans custom 3D parts. These are starter meshes rather than finished high-detail vehicle models.
+
 > **Cloudflare auto-deployment and phone cache fixes:** To connect the GitHub repo to the actual NOVA Worker once, follow [Cloudflare automatic deployment setup](CLOUDFLARE_AUTO_DEPLOY_SETUP.md). GitHub Pages and the Worker are separate; the Web and cloud-memory UI may appear before the cloud service is deployed.
 
 > **New owner-controlled capabilities:** Cloud-memory correction and JSON export, optional Cloudflare image analysis, offline HTML/CSS/JS checks, and manual NOVA Pro answer review. [Read the setup and limits](NOVA_CAPABILITIES_RELEASE_2026-11-10.md). Deployment and owner configuration still required for Cloudflare features.
