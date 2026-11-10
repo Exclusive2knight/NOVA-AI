@@ -1,0 +1,278 @@
+{
+  "description": "Human-authored unseen intent paraphrases, not included in Native 1.0 training",
+  "date": "2026-11-09",
+  "items": [
+    {
+      "intent": "greeting",
+      "prompt": "hi there NOVA"
+    },
+    {
+      "intent": "greeting",
+      "prompt": "morning assistant"
+    },
+    {
+      "intent": "greeting",
+      "prompt": "nice to meet you"
+    },
+    {
+      "intent": "greeting",
+      "prompt": "hey there, can we chat"
+    },
+    {
+      "intent": "website",
+      "prompt": "launch a homepage for a local bookshop"
+    },
+    {
+      "intent": "website",
+      "prompt": "put together a site for my club"
+    },
+    {
+      "intent": "website",
+      "prompt": "a mobile-friendly homepage for a dentist"
+    },
+    {
+      "intent": "website",
+      "prompt": "could you design an online storefront landing page"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "showcase my photography on a portfolio"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "make a personal showcase with my projects"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "I need a website displaying my artwork"
+    },
+    {
+      "intent": "portfolio",
+      "prompt": "an online CV with skills and past work"
+    },
+    {
+      "intent": "todo",
+      "prompt": "make an organizer for my daily chores"
+    },
+    {
+      "intent": "todo",
+      "prompt": "I need an interactive tasks checklist"
+    },
+    {
+      "intent": "todo",
+      "prompt": "help me make a grocery task tracker"
+    },
+    {
+      "intent": "todo",
+      "prompt": "create a web app where I tick off tasks"
+    },
+    {
+      "intent": "notes",
+      "prompt": "a diary app where I type journal entries"
+    },
+    {
+      "intent": "notes",
+      "prompt": "make a text notebook I can edit"
+    },
+    {
+      "intent": "notes",
+      "prompt": "I need a place to jot down thoughts"
+    },
+    {
+      "intent": "notes",
+      "prompt": "build a writing pad for reminders"
+    },
+    {
+      "intent": "timer",
+      "prompt": "count down 12 minutes for homework"
+    },
+    {
+      "intent": "timer",
+      "prompt": "a study clock with start and pause buttons"
+    },
+    {
+      "intent": "timer",
+      "prompt": "build an interval countdown tool"
+    },
+    {
+      "intent": "timer",
+      "prompt": "make a digital stopwatch widget"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "a keypad that adds and subtracts"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "design a calculator with numbered buttons"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "make a tiny arithmetic calculator tool"
+    },
+    {
+      "intent": "calculator",
+      "prompt": "I'd like an interactive calculator page"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "test my history knowledge with questions"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "a multiple choice trivia app"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "can you create a science quiz game"
+    },
+    {
+      "intent": "quiz",
+      "prompt": "quiz me on geography"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "a metrics panel for my store"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "show sales and users in an admin dashboard"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "make a stats overview with sample charts"
+    },
+    {
+      "intent": "dashboard",
+      "prompt": "I need an analytics interface"
+    },
+    {
+      "intent": "game",
+      "prompt": "a clicking game that keeps score"
+    },
+    {
+      "intent": "game",
+      "prompt": "make an arcade challenge for the browser"
+    },
+    {
+      "intent": "game",
+      "prompt": "build a tiny score-collecting game"
+    },
+    {
+      "intent": "game",
+      "prompt": "simple game with a tap counter"
+    },
+    {
+      "intent": "math",
+      "prompt": "what is 28 plus 13"
+    },
+    {
+      "intent": "math",
+      "prompt": "work out 14 multiplied by 8"
+    },
+    {
+      "intent": "math",
+      "prompt": "calculate (20 - 5) / 3"
+    },
+    {
+      "intent": "math",
+      "prompt": "how much is 76 divided by 4"
+    },
+    {
+      "intent": "summary",
+      "prompt": "condense the following paragraph into key points"
+    },
+    {
+      "intent": "summary",
+      "prompt": "give the main takeaways from this long text"
+    },
+    {
+      "intent": "summary",
+      "prompt": "write a short recap of these notes"
+    },
+    {
+      "intent": "summary",
+      "prompt": "pull out the essential ideas from this passage"
+    },
+    {
+      "intent": "explain",
+      "prompt": "can you teach me how recursion works"
+    },
+    {
+      "intent": "explain",
+      "prompt": "describe how computers interpret instructions"
+    },
+    {
+      "intent": "explain",
+      "prompt": "help me understand what arrays are"
+    },
+    {
+      "intent": "explain",
+      "prompt": "tell me how machine learning functions"
+    },
+    {
+      "intent": "creative",
+      "prompt": "brainstorm a few fictional brand names"
+    },
+    {
+      "intent": "creative",
+      "prompt": "think of a fantasy story premise"
+    },
+    {
+      "intent": "creative",
+      "prompt": "suggest interesting product names"
+    },
+    {
+      "intent": "creative",
+      "prompt": "invent a character and setting"
+    },
+    {
+      "intent": "code",
+      "prompt": "show me a Python loop example"
+    },
+    {
+      "intent": "code",
+      "prompt": "debug this JavaScript function please"
+    },
+    {
+      "intent": "code",
+      "prompt": "how do I write a CSS selector"
+    },
+    {
+      "intent": "code",
+      "prompt": "write a simple function in JavaScript"
+    },
+    {
+      "intent": "memory",
+      "prompt": "please save this as something to remember"
+    },
+    {
+      "intent": "memory",
+      "prompt": "what lessons have I taught you"
+    },
+    {
+      "intent": "memory",
+      "prompt": "store this phrase for later"
+    },
+    {
+      "intent": "memory",
+      "prompt": "learn an example from this prompt"
+    },
+    {
+      "intent": "general",
+      "prompt": "what are your limitations"
+    },
+    {
+      "intent": "general",
+      "prompt": "how capable is this native AI"
+    },
+    {
+      "intent": "general",
+      "prompt": "give me an overview of NOVA"
+    },
+    {
+      "intent": "general",
+      "prompt": "I need help but I'm not sure what with"
+    }
+  ]
+}
