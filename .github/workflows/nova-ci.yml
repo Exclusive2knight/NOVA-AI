@@ -36,6 +36,10 @@ jobs:
         run: node tests/nova_project_check.cjs
       - name: Test secure sandbox preview errors and user-approved repair
         run: node tests/nova_preview.cjs
+      - name: Test Cloudflare image generation authentication and output
+        run: node tests/nova_image.cjs
+      - name: Test real procedural GLB generation and glTF 2.0 format
+        run: node tests/nova_3d.cjs
       - name: Validate Cloudflare Vision photo privacy and security
         run: node tests/nova_vision.cjs
       - name: Validate Cloudflare deployment preparation without credentials
