@@ -201,8 +201,99 @@ function bindSuggestions(){document.querySelectorAll('[data-suggest]').forEach(b
 function resizePrompt(){const t=$('messageInput');t.style.height='auto';t.style.height=Math.min(160,Math.max(44,t.scrollHeight))+'px';}
 function setButtons(){renderUsage();const s=$('searchToggle'),b=$('buildToggle');s.setAttribute('aria-pressed',String(!!state.search));b.setAttribute('aria-pressed',String(!!state.build));$('sendBtn').textContent=busy?'■':'↑';$('sendBtn').title=busy?'Stop':'Send';$('usageNote').textContent=(state.model==='nova-tiny'?'NOVA Tiny is an offline experimental word-transition model, not a general AI.':modelReady?(state.build?'Build mode creates editable files in your workspace.':state.search&&webReady?(searchMode==='web'?'Full web search is on · Responses may link to sources.':'Wikipedia reference search is on · Not a full web search.'):'AI connected · Uses Cloudflare Workers AI free-tier allocation.'):'Offline workspace · Deploy to Cloudflare to enable real AI responses.');}
 function updateAttach(){const wrap=$('attachmentList');wrap.replaceChildren();for(const a of pendingFiles){const chip=document.createElement('div');chip.className='file-chip';const span=document.createElement('span');span.textContent='▤ '+a.name;const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label','Remove '+a.name);b.onclick=()=>{pendingFiles=pendingFiles.filter(x=>x!==a);updateAttach()};chip.append(span,b);wrap.append(chip)}}
-function parseStream(eventText,onToken,onSources){const lines=eventText.split(/\r?\n/);let kind='';for(const line of lines){if(line.startsWith('event:'))kind=line.slice(6).trim();if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(!data||data==='[DONE]')continue;let obj;try{obj=JSON.parse(data)}catch(e){continue}if(kind==='sources'||obj.type==='sources'){onSources(obj.sources||[]);continue}if(kind==='error'||obj.error)throw new Error(obj.error||'AI streaming error');const delta=obj.choices?.[0]?.delta?.content??obj.response??obj.delta?.content??'';if(typeof delta==='string'&&delta)onToken(delta);}}
-async function chatRequest(messages,attachments){const response=await fetch(apiEndpoint('/api/chat'),{method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},body:JSON.stringify({messages,memory:state.memory,search:!!state.search,model:state.model,preferences:requestPreferences(),attachments}) ,signal:aborter.signal});if(!response.ok){let d={};try{d=await response.json()}catch(e){}throw new Error(d.error||'AI server error ('+response.status+')')};if(!response.body){throw new Error('Your browser could not read the AI response stream')};const reader=response.body.getReader(),decoder=new TextDecoder();let buf='',content='',sources=[];while(true){const part=await reader.read();if(part.done)break;buf+=decoder.decode(part.value,{stream:true});const chunks=buf.split(/\r?\n\r?\n/);buf=chunks.pop()||'';for(const ch of chunks)parseStream(ch,t=>{content+=t;const c=activeChat();if(c?.messages.length){c.messages[c.messages.length-1].content=content;renderMessages()}},s=>{sources=s})}if(buf.trim())parseStream(buf,t=>{content+=t},s=>{sources=s});return{content:content.trim(),sources}}
+
+function parseStream(eventText,onToken,onSources,onFinish){
+ const lines=eventText.split(/\r?\n/);let kind='';
+ for(const line of lines){
+  if(line.startsWith('event:'))kind=line.slice(6).trim();
+  if(!line.startsWith('data:'))continue;
+  const data=line.slice(5).trim();
+  if(!data||data==='[DONE]')continue;
+  let obj;try{obj=JSON.parse(data)}catch(e){continue}
+  if(kind==='sources'||obj.type==='sources'){onSources(obj.sources||[]);continue}
+  if(kind==='error'||obj.error)throw new Error(obj.error||'AI streaming error');
+  const delta=obj.choices?.[0]?.delta?.content??obj.response??obj.delta?.content??'';
+  if(typeof delta==='string'&&delta)onToken(delta);
+  const finish=obj.choices?.[0]?.finish_reason??obj.finish_reason??obj.stop_reason;
+  if(finish)onFinish(String(finish));
+ }
+}
+function buildContext(messages,limit=47500){
+ // Keep the complete chat locally. Select recent messages plus a few relevant older excerpts
+ // for the hosted model; this is retrieval, NOT a billion-token model context window.
+ const clean=messages.filter(m=>['user','assistant'].includes(m?.role)&&typeof m.content==='string'&&m.content.trim());
+ if(!clean.length)return [];
+ const latest=[...clean].reverse();let budget=limit;const recents=[];
+ for(const m of latest){
+  if(recents.length>=22||budget<700)break;
+  const content=m.content.slice(-Math.min(12000,budget-100));
+  recents.unshift({role:m.role,content});budget-=content.length+100;
+ }
+ const old=clean.slice(0,Math.max(0,clean.length-recents.length));
+ const q=new Set((clean[clean.length-1]?.content||'').toLowerCase().match(/[a-z]{4,}/g)||[]);
+ const earlier=old.map((m,i)=>{
+  let score=0;
+  for(const word of (m.content.toLowerCase().match(/[a-z]{4,}/g)||[]))if(q.has(word))score++;
+  return{i,score,role:m.role,content:m.content.slice(0,Math.min(1100,budget))};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,Math.min(3,Math.floor(budget/1100))).sort((a,b)=>a.i-b.i);
+ const recall=earlier.map(m=>({role:m.role,content:'Earlier conversation excerpt:\n'+m.content}));
+ return [...recall,...recents].slice(-30);
+}
+async function chatRequest(messages,attachments,onProgress,opts={}){
+ const response=await fetch(apiEndpoint('/api/chat'),{
+  method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},
+  body:JSON.stringify({messages:buildContext(messages),memory:state.memory,search:!!state.search&&!opts.continuation,model:state.model,preferences:requestPreferences(),attachments:opts.continuation?[]:attachments}),
+  signal:aborter.signal
+ });
+ if(!response.ok){let d={};try{d=await response.json()}catch(e){}throw new Error(d.error||'AI server error ('+response.status+')')}
+ if(!response.body)throw Error('Your browser cannot read the streaming response');
+ const reader=response.body.getReader(),decoder=new TextDecoder();
+ let buf='',content='',sources=[],finishReason='',lastPaint=0;
+ const token=t=>{content+=t;if(content.length>160000)throw Error('Response exceeded browser limit; export the answer in smaller pieces.');const now=Date.now();if(onProgress&&now-lastPaint>140){lastPaint=now;onProgress(content)}};
+ const src=s=>{sources=s};
+ const finish=x=>{finishReason=x};
+ try{
+  while(true){
+   const {value,done}=await reader.read();if(done)break;
+   buf+=decoder.decode(value,{stream:true});
+   const chunks=buf.split(/\r?\n\r?\n/);buf=chunks.pop()||'';
+   for(const eventText of chunks)parseStream(eventText,token,src,finish);
+  }
+  buf+=decoder.decode();
+  if(buf.trim())parseStream(buf,token,src,finish);
+ }finally{reader.releaseLock()}
+ if(onProgress)onProgress(content);
+ return {content:content.trim(),sources,finishReason,truncated:finishReason==='length'||finishReason==='max_tokens'};
+}
+function appendContinuation(base,extra){
+ const a=String(base||''),b=String(extra||'').trimStart();
+ if(!b)return a;
+ // Minimize model repetition where the same ending is repeated at the start.
+ let overlap=0;
+ for(let k=Math.min(350,a.length,b.length);k>=24;k--){if(a.slice(-k)===b.slice(0,k)){overlap=k;break}}
+ return a+(a&&!/\s$/.test(a)&&!/^[,.;:!?]/.test(b)?'\n':'')+b.slice(overlap);
+}
+function continuationMessages(chat,index){
+ const prior=chat.messages.slice(0,index);
+ const answer=String(chat.messages[index]?.content||'').slice(-8500);
+ return [...buildContext(prior,32000),
+  {role:'assistant',content:answer},
+  {role:'user',content:'Continue your previous answer EXACTLY where it stopped. Do not repeat the beginning or restate the question. Continue the unfinished section; finish clearly. If you were writing code, continue the code without losing syntax.'}];
+}
+async function continueAnswer(index){
+ if(busy)return notice('Finish the current response first');
+ if(!modelReady||state.model==='nova-tiny')return notice('Connect to Cloudflare AI to continue a reply');
+ const chat=activeChat(),item=chat?.messages[index];if(!item||item.role!=='assistant')return;
+ const sentModel=state.model;
+ busy=true;aborter=new AbortController();setButtons();item._previousText=item.content;item.truncated=false;
+ try{
+  const reply=await chatRequest(continuationMessages(chat,index),[],part=>{item.content=appendContinuation(item._previousText||'',part);const now=Date.now();if(now-(item._lastRender||0)>240){item._lastRender=now;renderMessages()}},{continuation:true});
+  item.content=appendContinuation(item._previousText||'',reply.content);
+  item.truncated=reply.truncated;recordUsage(sentModel);
+ }catch(e){item.truncated=true;notice(e.name==='AbortError'?'Continuation stopped':String(e.message).slice(0,140))}
+ finally{delete item._previousText;delete item._lastRender;busy=false;aborter=null;save();renderMessages();setButtons()}
+}
+
 async function buildRequest(messages,attachments){const response=await fetch(apiEndpoint('/api/build'),{method:'POST',headers:{'Content-Type':'application/json','X-NOVA-Passcode':state.passcode||''},body:JSON.stringify({messages,memory:state.memory,model:state.model,preferences:requestPreferences(),files:Object.entries(state.files).slice(0,14).map(([path,content])=>({path,content:content.slice(0,16000)})),attachments}),signal:aborter.signal});let data={};try{data=await response.json()}catch(e){}if(!response.ok)throw new Error(data.error||'Build failed ('+response.status+')');return data}
 async function sendMessage(){if(busy){aborter?.abort();busy=false;setButtons();return}const input=$('messageInput'),s=input.value.trim();if(!s)return;if(s.length>12000)return notice('Message must be under 12,000 characters');if(state.enforceLimit&&usageStats().today>=state.dailyLimit)return notice('Your personal daily goal is reached. Change your limit in Settings or try again after midnight UTC.');const sentModel=state.model;const c=ensureChat();if(c.messages.length===0)c.title=s.slice(0,55);c.messages.push({role:'user',content:s,attachments:pendingFiles.map(f=>f.name)});c.updated=Date.now();input.value='';resizePrompt();const att=pendingFiles;pendingFiles=[];updateAttach();renderChats();if(state.model==='nova-tiny'){c.messages.push({role:'assistant',content:tinyReply(s)});recordUsage(sentModel);save();renderMessages();if(state.autoSpeak)speak(c.messages[c.messages.length-1].content);return}if(!modelReady){c.messages.push({role:'assistant',content:'NOVA’s online AI is not connected yet. The workspace and file editor work right now, but AI chat, automatic project building and web research need your Cloudflare Worker deployed with an AI binding. Open Settings to see the connection status.\n\nYou can still tap “Try a site template” and edit or export real files offline.'});save();renderMessages();return}
  busy=true;let completed=false;aborter=new AbortController();c.messages.push({role:'assistant',content:state.search?'Searching and thinking…':state.build?'Generating project files…':'Thinking…'});save();renderMessages();setButtons();try{const msgs=c.messages.slice(0,-1).slice(-14).map(m=>({role:m.role,content:m.content}));if(state.build){const data=await buildRequest(msgs,att);if(Array.isArray(data.files)&&data.files.length){for(const file of data.files){if(validPath(file.path)&&typeof file.content==='string')state.files[file.path]=file.content.slice(0,100000)}const first=data.files.find(f=>validPath(f.path));if(first)chosenFile=first.path;renderFiles();}c.messages[c.messages.length-1].content=(data.message||'Project generated.')+(data.files?.length?'\n\nCreated/updated: '+data.files.map(f=>f.path).join(', '):'');completed=true;}else{const data=await chatRequest(msgs,att);c.messages[c.messages.length-1].content=data.content||'No text was returned by the AI. Try again.';c.messages[c.messages.length-1].sources=data.sources;completed=!!data.content;if(state.autoSpeak)speak(data.content||'');}}catch(e){c.messages[c.messages.length-1].content=e.name==='AbortError'?'Stopped.':('Could not finish: '+e.message)}finally{if(completed)recordUsage(sentModel);busy=false;aborter=null;c.updated=Date.now();save();renderChats();renderMessages();setButtons();}}
