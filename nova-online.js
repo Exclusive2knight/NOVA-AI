@@ -1,0 +1,95 @@
+/* NOVA Native Online: optional sourced reference search, not hosted AI inference.
+ * Only the current search query is sent externally; no chat history, attachments
+ * or model weights. Browser Wikipedia API fallback works without Cloudflare.
+ */
+(function(root){
+'use strict';
+const WIKI='https://en.wikipedia.org/w/api.php';
+function queryText(text){
+ return String(text||'')
+  .replace(/^\s*(?:hey\s+nova[\s,:-]*|nova[\s,:-]*)/i,'')
+  .replace(/^\s*(?:(?:please|could you|can you)\s+)?(?:look up|search(?: the (?:internet|web))? for|find (?:online )?(?:information|info) (?:about|on)|research|tell me (?:about|more about))\s*/i,'')
+  .replace(/\s+/g,' ').trim().slice(0,220);
+}
+function plain(value){
+ return String(value||'').replace(/<[^>]*>/g,' ')
+  .replace(/&(?:amp|quot|apos|lt|gt|nbsp);/g,k=>({'&amp;':'&','&quot;':'"','&apos;':"'",'&lt;':'<','&gt;':'>','&nbsp;':' '}[k]))
+  .replace(/&#(\d{1,6});/g,(_,n)=>String.fromCodePoint(Math.min(1114111,Number(n))))
+  .replace(/\s+/g,' ').trim();
+}
+function cleanSources(list){
+ if(!Array.isArray(list))return [];
+ return list.slice(0,5).map(r=>({
+  title:plain(r.title).slice(0,140),
+  url:String(r.url||'').slice(0,650),
+  content:plain(r.content||r.snippet||r.description).slice(0,650)
+ })).filter(s=>{
+  try{const u=new URL(s.url);return s.title&&u.protocol==='https:'}catch{return false}
+ });
+}
+async function directWikipedia(query,signal){
+ const url=new URL(WIKI);
+ url.searchParams.set('action','query');
+ url.searchParams.set('list','search');
+ url.searchParams.set('srsearch',query);
+ url.searchParams.set('srnamespace','0');
+ url.searchParams.set('srlimit','5');
+ url.searchParams.set('format','json');
+ url.searchParams.set('origin','*');
+ const response=await fetch(url.href,{mode:'cors',credentials:'omit',cache:'no-store',signal});
+ if(!response.ok)throw Error('Wikipedia search returned '+response.status);
+ const data=await response.json();
+ if(data?.error)throw Error('Wikipedia lookup was unavailable');
+ const sources=cleanSources((data?.query?.search||[]).map(r=>({
+  title:r.title,
+  url:'https://en.wikipedia.org/wiki/'+encodeURIComponent(String(r.title||'').replace(/ /g,'_')),
+  content:r.snippet
+ })));
+ return {provider:'Wikipedia',sources,mode:'direct'};
+}
+async function workerSearch(query,base,passcode,signal){
+ const baseUrl=String(base||'').replace(/\/$/,'');
+ if(!/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(baseUrl))throw Error('No Worker available');
+ const headers={'Content-Type':'application/json'};
+ if(passcode)headers['X-NOVA-Passcode']=passcode;
+ const response=await fetch(baseUrl+'/api/native-search',{method:'POST',headers,
+  body:JSON.stringify({query}),signal,cache:'no-store'});
+ if(!response.ok)throw Error('Worker internet lookup not available ('+response.status+')');
+ const data=await response.json();
+ if(!Array.isArray(data.sources))throw Error('Unrecognized Worker search response');
+ return {provider:data.provider==='web'?'Web search':'Wikipedia',sources:cleanSources(data.sources),mode:'worker'};
+}
+async function search(text,{backendUrl='',passcode='',signal,onStep}={}){
+ const query=queryText(text);
+ if(query.length<2)throw Error('Enter at least two characters to search online.');
+ if(onStep)onStep({type:'web',label:'Sending only this search query to online sources'});
+ if(backendUrl){
+  try{
+   const found=await workerSearch(query,backendUrl,passcode,signal);
+   if(onStep)onStep({type:'web',label:'Received '+found.sources.length+' '+found.provider+' search results from Worker'});
+   return {...found,query};
+  }catch(e){
+   if(signal?.aborted)throw e;
+   if(onStep)onStep({type:'web',label:'Worker search unavailable; trying public Wikipedia directly'});
+  }
+ }
+ const direct=await directWikipedia(query,signal);
+ if(onStep)onStep({type:'web',label:'Received '+direct.sources.length+' results from Wikipedia'});
+ return {...direct,query};
+}
+function describe(result){
+ const rows=result.sources||[];
+ if(!rows.length)return 'NOVA Native Online could not find a relevant reference for “'+result.query+'”. Try more specific keywords.';
+ const list=rows.slice(0,4).map((r,i)=>(i+1)+'. '+r.title+(r.content?' — '+r.content:''));
+ return 'NOVA Native Online · '+result.provider+'\n\nHere are relevant search excerpts for “'+result.query+'”:\n\n'+list.join('\n\n')+'\n\nOpen the linked sources below to check the full information. This is sourced lookup, not a generated expert answer.';
+}
+function shouldSearch(text,localResult,{enabled=false,build=false}={}){
+ if(!enabled||build||localResult?.files?.length||localResult?.skill==='clarify'||localResult?.skill==='math')return false;
+ const q=String(text||'').trim().toLowerCase();
+ if(!q||/^(hi|hey|hello|yo|thanks|thank you|good morning|good night|what can you do)\s*[!? .]*$/i.test(q))return false;
+ // If a request is explicitly for a local creation, keep using the original local builder.
+ if(/^(?:please\s+)?(?:make|build|create|design)\s+(?:me\s+)?(?:a|an|the)?\s*/i.test(q)&&!/(?:search|online|web|research|look up)/i.test(q))return false;
+ return true;
+}
+root.NOVANativeOnline={version:'1.0',queryText,cleanSources,search,describe,shouldSearch};
+})(window);
