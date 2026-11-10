@@ -5,6 +5,7 @@ const EMBEDDED_ASSETS = {"/index.html":"<!doctype html>\n<html lang=\"en\"><head
 // Compatible with Wrangler static assets and the separately generated single-file Worker.
 const MODELS=Object.freeze({
  gemma:'@cf/google/gemma-4-26b-a4b-it',
+ strong:'@cf/openai/gpt-oss-120b',
  glm:'@cf/zai-org/glm-4.7-flash',
  qwen:'@cf/qwen/qwen3.8-27b',
  pro:'@cf/qwen/qwen3.8-27b'
@@ -22,11 +23,14 @@ function preferences(body){
  };
 }
 function modelOptions(body,env,build=false){
- const model=body?.model||'pro',pro=model==='pro',p=preferences(body),opts={};
+ const model=body?.model||'pro',pro=model==='pro',strong=model==='strong',p=preferences(body),opts={};
  // max_completion_tokens includes hidden reasoning, so long visible answers may
  // need continuation; the frontend supports bounded automatic + manual continuation.
  const lengthBudget={brief:2300,balanced:4200,detailed:6500,extended:8500};
  opts.max_completion_tokens=build?(pro?7900:5300):(pro?lengthBudget[p.length]:Math.min(lengthBudget[p.length],5200));
+ // GPT-OSS on Workers AI documents max_tokens, unlike Qwen's max_completion_tokens.
+ // The model's built-in medium reasoning remains enabled; no paid endpoint is used.
+ if(strong){delete opts.max_completion_tokens;opts.max_tokens=build?6500:Math.min(lengthBudget[p.length],6500)}
  opts.temperature=p.creativity==='precise'?0.17:p.creativity==='creative'?0.72:0.35;
  if((model==='qwen'||pro)&&!isPaidPro(body,env)){
   let effort='medium';
@@ -297,9 +301,11 @@ function isQuotaProblem(e){
 }
 async function verifiedProResponse(env,body,messages,build=false){
  const primary=selectedModel(body,env),params=modelOptions(body,env,build);
- const candidates=[{name:primary,label:'Qwen 3.8',options:{...params}}];
+ const isStrong=body?.model==='strong';
+ const candidates=[{name:primary,label:isStrong?'GPT-OSS 120B':isPaidPro(body,env)?'DeepSeek V4.1 Flash':'Qwen 3.8',options:{...params}}];
  // Paid-model access is never silently upgraded or retried on paid providers.
  if(!isPaidPro(body,env)){
+  if(isStrong)candidates.push({name:MODELS.qwen,label:'Qwen 3.8',options:{max_completion_tokens:build?5300:4200,temperature:params.temperature,reasoning_effort:'medium'}});
   candidates.push({name:MODELS.glm,label:'GLM 4.7 Flash',options:{max_completion_tokens:build?2600:Math.min(params.max_completion_tokens,2400),temperature:params.temperature}});
   candidates.push({name:MODELS.gemma,label:'Gemma 4',options:{max_completion_tokens:build?2600:Math.min(params.max_completion_tokens,2100),temperature:params.temperature}});
  }
@@ -321,7 +327,7 @@ async function verifiedProResponse(env,body,messages,build=false){
 }
 async function runAIWithFallback(env,body,messages,build=false){
  // Used by Build mode and non-Pro streaming. Keep model selection unchanged.
- if(body?.model==='pro')return verifiedProResponse(env,body,messages,build);
+ if(body?.model==='pro'||body?.model==='strong')return verifiedProResponse(env,body,messages,build);
  const model=selectedModel(body,env),params=modelOptions(body,env,build);
  return {result:await env.AI.run(model,{messages,stream:!build,...params}),model,label:body.model||'Model',fallback:false};
 }
@@ -339,11 +345,11 @@ async function handleChat(request,env,body){
  const sources=body.search&&serverSearchAppropriate(msgs.at(-1).content)?await research(msgs.at(-1).content,env):[];
  const modelMessages=prepareMessages(body,'chat',sources);
  const enc=new TextEncoder();
- if(body.model==='pro'){
+ if(body.model==='pro'||body.model==='strong'){
   const result=await verifiedProResponse(env,body,modelMessages,false);
   const output=new ReadableStream({start(controller){
    controller.enqueue(enc.encode('event: sources\n'+'data: '+JSON.stringify({sources:sources.map(({title,url})=>({title,url}))})+'\n\n'));
-   const note=result.fallback?'[NOVA Pro used '+result.label+' after another model failed]\n\n':'';
+   const note=result.fallback?'[NOVA used '+result.label+' after another model failed]\n\n':'';
    controller.enqueue(enc.encode('data: '+JSON.stringify({response:note+result.content,finish_reason:result.finishReason})+'\n\n'));
    controller.enqueue(enc.encode('data: [DONE]\n\n'));
    controller.close();
