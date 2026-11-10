@@ -42,6 +42,8 @@ jobs:
         run: node tests/nova_project_check.cjs
       - name: Test secure sandbox preview errors and user-approved repair
         run: node tests/nova_preview.cjs
+      - name: Test strongest free model GPT-OSS 120B and Qwen fallback
+        run: node tests/nova_strong_free.cjs
       - name: Test Cloudflare image generation authentication and output
         run: node tests/nova_image.cjs
       - name: Validate NOVA Create Studio image and GLB mobile workflows
