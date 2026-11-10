@@ -30,6 +30,10 @@ async function fakeFetch(url,opts={}){
  if(address.includes('api.tavily.com'))return new Response(JSON.stringify({results:[
    {title:'Public information',url:'https://example.org/reference',content:'A sample excerpt'}
  ]}),{status:200,headers:{'Content-Type':'application/json'}});
+ if(address.includes('api.search.brave.com'))return new Response(JSON.stringify({web:{results:[
+   {title:'University <b>guide</b>',url:'https://university.example.edu/guide',description:'Full public webpage result'},
+   {title:'Forum discussion',url:'https://forums.example.org/hello',description:'Public discussion page'}
+ ]}}),{status:200,headers:{'Content-Type':'application/json'}});
  throw Error('Unexpected outbound URL: '+address);
 }
 new Function('window','fetch','URL',client)(sandbox,fakeFetch,URL);
@@ -81,6 +85,34 @@ async function test(){
  });
  assert.equal(response.status,200);
  assert.equal((await response.json()).provider,'web','Private authorized search can use the configured full-web provider');
+ const braveStart=calls.length;
+ response=await worker.fetch(req('electric vehicle repair guides','https://exclusive2knight.github.io','owner-passcode-123'),{
+  BRAVE_SEARCH_API_KEY:'test-brave-key',NOVA_PASSCODE:'owner-passcode-123'
+ });
+ assert.equal(response.status,200,'Owner should be able to use Brave for full web search');
+ let brave=await response.json();
+ assert.equal(brave.provider,'web');
+ assert.equal(brave.engine,'brave');
+ assert.equal(brave.sources[0].title,'University guide','Strip HTML from Brave titles');
+ assert(calls.slice(braveStart).some(x=>x.address.includes('api.search.brave.com')&&x.address.includes('safesearch=strict')));
+ const braveCall=calls.slice(braveStart).find(x=>x.address.includes('api.search.brave.com'));
+ assert.equal(braveCall.opts.headers['X-Subscription-Token'],'test-brave-key');
+ assert.equal(brave.sources.length,2);
+ const anonymousStart=calls.length;
+ response=await worker.fetch(req('electric vehicle repair guides'),{
+  BRAVE_SEARCH_API_KEY:'test-brave-key',NOVA_PASSCODE:'owner-passcode-123'
+ });
+ assert.equal((await response.json()).provider,'wikipedia','Anonymous users must not spend Brave credits');
+ assert(calls.slice(anonymousStart).every(x=>!x.address.includes('api.search.brave.com')));
+ response=await worker.fetch(new Request('https://nova-ai.example.workers.dev/api/status'),{
+  BRAVE_SEARCH_API_KEY:'test-brave-key',NOVA_PASSCODE:'owner-passcode-123'
+ });
+ const status=await response.json();
+ assert.equal(status.searchMode,'web');
+ assert.equal(status.searchProvider,'brave');
+ assert.equal(status.webSearchRequiresPasscode,true);
+ assert.equal(online.cleanSources(brave.sources).length,2);
+
 
  assert(html.includes('<script src="./nova-online.js"></script>'));
  assert(html.includes('window.NOVANativeOnline.search('));
