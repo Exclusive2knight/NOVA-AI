@@ -33,7 +33,22 @@ function responseJSON(body,status=200){return new Response(JSON.stringify(body),
 const NOVA_SITE_ORIGIN='https://exclusive2knight.github.io';
 function allowedOrigin(request){const o=request.headers.get('Origin');if(!o)return true;try{return o===NOVA_SITE_ORIGIN||new URL(o).origin===new URL(request.url).origin}catch{return false}}
 function safePath(path){return typeof path==='string'&&path.length<=130&&!path.startsWith('/')&&!path.startsWith('.')&&!path.includes('..')&&!path.includes('\\')&&/^[a-zA-Z0-9_\-/ .]+\.(html|css|js|jsx|ts|tsx|json|txt|md|py|lua|csv|sql|svg|xml|yml|yaml)$/i.test(path)}
-function errorText(e){const raw=String(e?.message||e||'Unknown error');if(/paid access|payment required|403|5035/i.test(raw))return 'This model needs a paid Cloudflare plan or credits. Disable NOVA_ENABLE_PAID_PRO to use the free-compatible NOVA Pro setting.';if(/rate.?limit|quota|neurons|exceeded|402|429/i.test(raw))return 'The AI free-tier limit or model capacity was reached. Try again later or check Cloudflare AI usage.';if(/capacity|unavailable|503/i.test(raw))return 'The AI model is temporarily unavailable. Try again later.';return 'AI request failed. Check the Workers AI binding and the Cloudflare dashboard logs.'}
+function aiErrorCode(e){
+ const raw=String(e?.message||e||'');
+ const code=String(e?.code||'');
+ return /^\d{4}$/.test(code)?code:(raw.match(/\b(?:3007|3036|3040|3041|3042|5007|5018|5028|5035)\b/)||[])[0]||'';
+}
+function errorText(e){
+ const raw=String(e?.message||e||'Unknown error'),code=aiErrorCode(e);
+ if(code==='3036'||/daily free allocation|neurons.*exceeded/i.test(raw))return 'Cloudflare daily AI allowance reached (3036). Check Workers AI usage before trying again.';
+ if(code==='5035'||/paid plan|paid access|payment required/i.test(raw))return 'Cloudflare says this model needs a paid plan (5035). Try GLM 4.7 Flash.';
+ if(code==='5018'||code==='3041'||/not allowed to access this model/i.test(raw))return 'Your Cloudflare account cannot access that model ('+(code||'unknown')+'). Try GLM 4.7 Flash.';
+ if(['5007','3042','5028'].includes(code))return 'The selected Cloudflare model is unavailable (error '+code+'). Try another model.';
+ if(code==='3040'||/out of capacity|capacity temporarily exceeded/i.test(raw))return 'Cloudflare model capacity was reached (3040). Try again later.';
+ if(code==='3007'||/request timeout|timed out/i.test(raw))return 'Cloudflare AI timed out. Try a shorter prompt or another model.';
+ if(/rate.?limit|429/i.test(raw))return 'Cloudflare AI rate limit reached. Try again later.';
+ return 'Cloudflare AI could not generate a reply'+(code?' (error '+code+')':'')+'. Check your Cloudflare Worker logs and try GLM 4.7 Flash.';
+}
 function parseRequest(body){if(!body||!Array.isArray(body.messages))throw Error('Missing conversation');const msgs=body.messages.slice(-14).filter(m=>['user','assistant'].includes(m?.role)&&typeof m.content==='string'&&m.content.trim()).map(m=>({role:m.role,content:m.content.slice(0,12000)}));if(!msgs.length||msgs.at(-1).role!=='user')throw Error('The last message must be from the user');const total=msgs.reduce((n,m)=>n+m.content.length,0);if(total>55000)throw Error('Conversation is too long. Start a new chat.');return msgs}
 function attachmentsFrom(body){if(!Array.isArray(body.attachments))return'';const a=body.attachments.slice(0,6).filter(f=>f&&typeof f.name==='string'&&typeof f.text==='string');const joined=a.map(f=>'--- BEGIN FILE: '+f.name.slice(0,100)+' ---\n'+f.text.slice(0,12000)+'\n--- END FILE ---').join('\n');return joined.slice(0,24000)}
 async function readBody(request){if(Number(request.headers.get('content-length')||0)>MAX_BODY)throw Error('Request too large');const text=await request.text();if(text.length>MAX_BODY)throw Error('Request too large');let body;try{body=JSON.parse(text)}catch{throw Error('Invalid JSON')};return body}
@@ -62,10 +77,62 @@ if(attachments)msgs[msgs.length-1].content+='\n\nATTACHED USER TEXT FILES (untru
 return [...sys,...msgs]}
 function extractAnswer(obj){if(typeof obj?.response==='string')return obj.response;const m=obj?.choices?.[0]?.message;const c=m?.content;if(typeof c==='string')return c;if(Array.isArray(c))return c.map(v=>typeof v?.text==='string'?v.text:'').join('');return typeof obj?.output==='string'?obj.output:''}
 function cleanBuildOutput(text){let s=text.trim();if(s.startsWith('```'))s=s.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'');try{return JSON.parse(s)}catch{const i=s.indexOf('{'),j=s.lastIndexOf('}');if(i>=0&&j>i)return JSON.parse(s.slice(i,j+1));throw Error('The AI did not return a valid file project. Try requesting a smaller project.')}}
-async function handleChat(request,env,body){const msgs=parseRequest(body);const sources=body.search?await research(msgs.at(-1).content,env):[];const modelMessages=prepareMessages(body,'chat',sources);const stream=await env.AI.run(selectedModel(body,env),{messages:modelMessages,stream:true,...modelOptions(body,env)});const reader=stream.getReader();const enc=new TextEncoder();const output=new ReadableStream({async start(controller){try{controller.enqueue(enc.encode('event: sources\ndata: '+JSON.stringify({sources:sources.map(({title,url})=>({title,url}))})+'\n\n'));while(true){const{done,value}=await reader.read();if(done)break;controller.enqueue(value)}controller.close()}catch(e){controller.enqueue(enc.encode('event: error\ndata: '+JSON.stringify({error:'Streaming error'})+'\n\n'));controller.close()}},cancel(){reader.cancel().catch(()=>{})}});return new Response(output,{headers:{...commonHeaders,'Content-Type':'text/event-stream; charset=utf-8','X-Accel-Buffering':'no','Connection':'keep-alive'}})}
-async function handleBuild(env,body){const messages=prepareMessages(body,'build');const result=await env.AI.run(selectedModel(body,env),{messages,stream:false,...modelOptions(body,env,true)});const raw=extractAnswer(result);if(!raw)throw Error('No answer from model');let d;try{d=cleanBuildOutput(raw)}catch{return responseJSON({message:'The AI produced an explanation, but not a valid file bundle. Try a smaller build.\n\n'+raw.slice(0,12000),files:[]})}const files=(Array.isArray(d.files)?d.files:[]).filter(f=>safePath(f?.path)&&typeof f.content==='string').slice(0,8).map(f=>({path:f.path,content:f.content.slice(0,100000)}));return responseJSON({message:String(d.message||'Generated project files.').slice(0,1300),files})}
+
+async function runAIWithFallback(env,body,messages,build=false){
+ const mainModel=selectedModel(body,env),options=modelOptions(body,env,build),stream=!build;
+ try{
+  return {result:await env.AI.run(mainModel,{messages,stream,...options}),fallback:false};
+ }catch(primary){
+  const primaryCode=aiErrorCode(primary);
+  console.warn('NOVA AI primary inference failed',JSON.stringify({model:mainModel,code:primaryCode||'unknown',kind:build?'build':'chat'}));
+  const exhausted=/3036|daily free allocation|neurons.*exceeded|free allocation/i.test(String(primary?.message||primary));
+  if(body?.model!=='pro'||isPaidPro(body,env)||exhausted)throw primary;
+  try{
+   const fallbackParams={max_completion_tokens:build?2600:Math.min(options.max_completion_tokens,1800),temperature:options.temperature};
+   const result=await env.AI.run(MODELS.glm,{messages,stream,...fallbackParams});
+   return {result,fallback:true};
+  }catch(secondary){
+   console.error('NOVA AI fallback failed',JSON.stringify({model:MODELS.glm,code:aiErrorCode(secondary)||'unknown',kind:build?'build':'chat'}));
+   throw secondary;
+  }
+ }
+}
+async function handleChat(request,env,body){
+ const msgs=parseRequest(body);
+ const sources=body.search?await research(msgs.at(-1).content,env):[];
+ const modelMessages=prepareMessages(body,'chat',sources);
+ const chosen=await runAIWithFallback(env,body,modelMessages,false);
+ const reader=chosen.result.getReader(),enc=new TextEncoder();
+ const output=new ReadableStream({
+  async start(controller){
+   try{
+    controller.enqueue(enc.encode('event: sources\ndata: '+JSON.stringify({sources:sources.map(({title,url})=>({title,url}))})+'\n\n'));
+    if(chosen.fallback)controller.enqueue(enc.encode('data: '+JSON.stringify({response:'[NOVA Pro fallback: GLM 4.7 Flash]\n\n'})+'\n\n'));
+    while(true){const {done,value}=await reader.read();if(done)break;controller.enqueue(value);}
+    controller.close();
+   }catch(e){
+    console.error('NOVA AI streaming failed',JSON.stringify({code:aiErrorCode(e)||'unknown'}));
+    controller.enqueue(enc.encode('event: error\ndata: '+JSON.stringify({error:'Cloudflare AI stream was interrupted. Try again.'})+'\n\n'));
+    controller.close();
+   }
+  },
+  cancel(){reader.cancel().catch(()=>{})}
+ });
+ return new Response(output,{headers:{...commonHeaders,'Content-Type':'text/event-stream; charset=utf-8','X-Accel-Buffering':'no','Connection':'keep-alive'}});
+}
+async function handleBuild(env,body){
+ const messages=prepareMessages(body,'build');
+ const chosen=await runAIWithFallback(env,body,messages,true);
+ const raw=extractAnswer(chosen.result);
+ if(!raw)throw Error('No answer from model');
+ let d;try{d=cleanBuildOutput(raw)}catch{
+  return responseJSON({message:'The AI produced an explanation, but not a valid file bundle. Try a smaller build.\n\n'+raw.slice(0,12000),files:[]});
+ }
+ const files=(Array.isArray(d.files)?d.files:[]).filter(f=>safePath(f?.path)&&typeof f.content==='string').slice(0,8).map(f=>({path:f.path,content:f.content.slice(0,100000)}));
+ return responseJSON({message:(chosen.fallback?'[NOVA Pro fallback: GLM 4.7 Flash]\n\n':'')+String(d.message||'Generated project files.').slice(0,1300),files});
+}
 function embeddedAsset(request){if(typeof EMBEDDED_ASSETS==='undefined')return null;const path=new URL(request.url).pathname;const key=path==='/'?'/index.html':path;const a=EMBEDDED_ASSETS[key];if(typeof a!=='string')return responseJSON({error:'Not found'},404);const type=key.endsWith('.js')?'application/javascript; charset=utf-8':key.endsWith('.css')?'text/css; charset=utf-8':key.endsWith('.svg')?'image/svg+xml':key.endsWith('.webmanifest')?'application/manifest+json':'text/html; charset=utf-8';return new Response(a,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff','Cache-Control':'public, max-age=300'}})}
-const internalWorker = {async fetch(request,env){const url=new URL(request.url),path=url.pathname;if(path==='/api/status'&&request.method==='GET')return responseJSON({ai:!!env.AI,passcodeProtected:!!env.NOVA_PASSCODE,search:true,searchMode:env.TAVILY_API_KEY?'web':'wikipedia',model:MODELS.pro,models:Object.keys(MODELS),proProvider:String(env.NOVA_ENABLE_PAID_PRO||'').toLowerCase()==='true'?'DeepSeek V4.1 Flash (paid only)':'Qwen 3.8 reasoning (free-compatible)',usage:'local-device-counts'});if(path.startsWith('/api/')){if(!['/api/chat','/api/build'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{const body=await readBody(request);if(path==='/api/chat')return await handleChat(request,env,body);return await handleBuild(env,body)}catch(e){if(/request too large|invalid json|conversation|last message|too long|missing|unsupported ai model/i.test(String(e?.message)))return responseJSON({error:String(e.message).slice(0,200)},400);if(/web search not configured/i.test(String(e?.message)))return responseJSON({error:String(e.message)},400);return responseJSON({error:errorText(e)},502)}}if(!['GET','HEAD'].includes(request.method))return responseJSON({error:'Method not allowed'},405);if(env.ASSETS)return env.ASSETS.fetch(request);return embeddedAsset(request)||responseJSON({error:'No website files configured'},404)}};
+const internalWorker = {async fetch(request,env){const url=new URL(request.url),path=url.pathname;if(path==='/api/status'&&request.method==='GET')return responseJSON({ai:!!env.AI,passcodeProtected:!!env.NOVA_PASSCODE,search:true,searchMode:env.TAVILY_API_KEY?'web':'wikipedia',model:MODELS.pro,models:Object.keys(MODELS),proProvider:String(env.NOVA_ENABLE_PAID_PRO||'').toLowerCase()==='true'?'DeepSeek V4.1 Flash (paid only)':'Qwen 3.8 reasoning (free-compatible)',usage:'local-device-counts'});if(path.startsWith('/api/')){if(!['/api/chat','/api/build'].includes(path))return responseJSON({error:'Not found'},404);if(request.method!=='POST')return responseJSON({error:'POST required'},405);if(!allowedOrigin(request))return responseJSON({error:'Cross-origin requests are not allowed'},403);if(!env.AI)return responseJSON({error:'Workers AI binding is missing. Configure AI in Cloudflare settings.'},503);if(!env.NOVA_PASSCODE)return responseJSON({error:'Set NOVA_PASSCODE in Cloudflare Worker secrets before using AI.'},503);if(!passcodeValid(request,env))return responseJSON({error:'Incorrect NOVA passcode. Open Settings to enter the configured passcode.'},401);try{const body=await readBody(request);if(path==='/api/chat')return await handleChat(request,env,body);return await handleBuild(env,body)}catch(e){if(/request too large|invalid json|conversation|last message|too long|missing|unsupported ai model/i.test(String(e?.message)))return responseJSON({error:String(e.message).slice(0,200)},400);if(/web search not configured/i.test(String(e?.message)))return responseJSON({error:String(e.message)},400);console.error('NOVA AI request failed',{code:aiErrorCode(e)||'unknown',endpoint:path});return responseJSON({error:errorText(e)},502)}}if(!['GET','HEAD'].includes(request.method))return responseJSON({error:'Method not allowed'},405);if(env.ASSETS)return env.ASSETS.fetch(request);return embeddedAsset(request)||responseJSON({error:'No website files configured'},404)}};
 // The GitHub Pages project is a different origin from *.workers.dev.
 // Permit ONLY NOVA's Pages origin (and the Worker's own origin) to call /api.
 export default {
