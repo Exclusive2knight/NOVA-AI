@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nova-ai",
+  "main": "cloudflare/NOVA_3_Phone_Deploy_Worker.js",
+  "compatibility_date": "2026-11-09",
+  "ai": {
+    "binding": "AI"
+  }
+}
