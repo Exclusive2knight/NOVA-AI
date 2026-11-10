@@ -12,16 +12,18 @@ assert(page.includes("cloudMemoryStoreExchange(promptText,answer.content)"),'Cha
 assert(page.includes("cloudMemoryExtra=await cloudMemoryRecall(promptText)"),'Chat does not retrieve cloud memory');
 const backend=workerSrc.slice(workerSrc.indexOf('// NOVA 3 — Cloudflare Worker.'));
 const entry=new Function(backend.replace('export default {','const WorkerEntry = {')+'\nreturn WorkerEntry;')();
-const rows=[];
+const rows=[];let cursorSeq=0;
 const db={prepare(sql){
  const stmt={
   params:[],
   bind(...values){this.params=values;return this;},
-  async first(){if(sql.includes('COUNT(*)'))return {total:rows.length};if(sql.includes('SELECT id FROM nova_memories WHERE body=?'))return rows.find(r=>r.body===this.params[0])||null;throw Error('Unexpected mock DB first: '+sql)},
+  async first(){if(sql.includes('COUNT(*)'))return {total:rows.length};if(sql.includes('SELECT id FROM nova_memories WHERE id=?'))return rows.find(r=>r.id===this.params[0])||null;if(sql.includes('SELECT id FROM nova_memories WHERE body=?'))return rows.find(r=>r.body===this.params[0])||null;throw Error('Unexpected mock DB first: '+sql)},
   async run(){
    if(sql.startsWith('INSERT INTO nova_memories')){
     const [body,source,created_at,id]=this.params;
-    rows.push({body,source,created_at,id});
+    rows.push({body,source,created_at,id,cursor:++cursorSeq});
+   }else if(sql==='UPDATE nova_memories SET body=? WHERE id=?'){
+    const item=rows.find(r=>r.id===this.params[1]);if(item)item.body=this.params[0];
    }else if(sql==='DELETE FROM nova_memories WHERE id=?'){
     const pos=rows.findIndex(r=>r.id===this.params[0]);
     if(pos>=0)rows.splice(pos,1);
@@ -35,6 +37,7 @@ const db={prepare(sql){
     return {results:rows.filter(r=>terms.some(t=>r.body.toLowerCase().includes(t.toLowerCase())))
       .slice(0,7).map(r=>({id:r.id,source:r.source,created_at:r.created_at,text:r.body.slice(0,1500)}))};
    }
+   if(sql.includes('WHERE rowid>? ORDER BY rowid LIMIT 201'))return {results:rows.filter(r=>r.cursor>this.params[0]).slice(0,201).map(r=>({cursor:r.cursor,id:r.id,source:r.source,created_at:r.created_at,text:r.body}))};
    if(sql.includes('ORDER BY CAST(created_at'))return {results:rows.slice(-60).reverse().map(r=>({
     id:r.id,source:r.source,created_at:r.created_at,text:r.body
    }))};
@@ -69,6 +72,20 @@ async function run(){
  assert(result.matches[0].text.includes('supercharged V6'));
  response=await entry.fetch(req('list'),env);
  assert.equal((await response.json()).memories.length,1);
+ // Edit a corrected fact in place and ensure old content is gone.
+ const badEdit=await entry.fetch(req('edit',{id:saved.id,text:'My password is 1234'}),env);
+ assert.equal(badEdit.status,400);
+ const edited=await entry.fetch(req('edit',{id:saved.id,text:'Monarch Q6 has four electric motors and supercharged V6'}),env);
+ assert.equal((await edited.json()).updated,true);
+ response=await entry.fetch(req('list'),env);
+ assert((await response.json()).memories[0].text.includes('four electric motors'));
+ // Pagination returns no more than 200 records per response.
+ for(let n=0;n<210;n++)rows.push({body:'Project note '+n,source:'note',created_at:String(Date.now()),id:'test-'+n,cursor:++cursorSeq});
+ const one=await (await entry.fetch(req('export',{after:0}),env)).json();
+ assert.equal(one.memories.length,200);assert(one.next>0);
+ const two=await (await entry.fetch(req('export',{after:one.next}),env)).json();
+ assert.equal(two.memories.length,11);assert.equal(two.next,null);
+ rows.splice(1);
  response=await entry.fetch(req('save',{text:'private data'}),'invalid');
  // Not a real env: should return an authorization response only if wired correctly.
  assert.equal(response.status,503);
@@ -86,6 +103,8 @@ async function run(){
  assert.equal(rows.length,0);
  response=await entry.fetch(req('status'),{NOVA_PASSCODE:env.NOVA_PASSCODE});
  assert.equal(response.status,503,'Missing D1 binding must be explicit');
- console.log('NOVA D1 cloud memory: opt-in UI, authenticated save/search/list/delete, source and origin security PASSED');
+ assert(page.includes('id="cloudMemoryExport"'),'Cloud memory export button missing');
+ assert(page.includes("cloudMemoryCall('edit'"),'Cloud memory correction UI missing');
+ console.log('NOVA D1 cloud memory: authorized save/search/edit/export/delete, pagination and privacy PASSED');
 }
 run().catch(error=>{console.error(error);process.exitCode=1});
