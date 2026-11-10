@@ -1,7 +1,7 @@
 {
-  "name": "NOVA — AI Workspace",
+  "name": "NOVA Studio — AI Workspace",
   "short_name": "NOVA",
-  "description": "Mobile-first AI chat and creative file workspace",
+  "description": "Chat, build editable creations, and use our original on-device AI with a polished installable workspace",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -14,5 +14,11 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": [
+    "productivity",
+    "utilities",
+    "education"
+  ],
+  "lang": "en"
 }
