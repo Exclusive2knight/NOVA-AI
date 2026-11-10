@@ -42,6 +42,33 @@ The config is in `cloudflare/wrangler.jsonc`. Only the Cloudflare-hosted site ha
 - The shared passcode is suitable only for a personal experiment, not a fully secured public multi-user AI platform.
 - Web hosting and AI capacity are separate: free plans have limits and availability can change.
 
+
+## NOVA 4 preview: formal design, voice, install, model selection
+
+The repository now has a restrained navy/blue **NOVA** logo and UI, plus a Progressive Web App manifest, icons, and offline app-shell service worker.
+
+### Install on your phone or computer
+
+- **iPhone/iPad**: open the deployed website in Safari, tap **Share**, choose **Add to Home Screen**, and open the new NOVA icon. Browser speech recognition varies on iOS; typed chat remains available.
+- **Android/desktop**: open the deployed website in Chrome or a compatible browser, then choose **Install app** / **Add to Home Screen** in the browser menu.
+- This installs the **web app** (PWA). It is not a downloadable native iOS IPA, Windows EXE, or Android APK.
+
+### Models, speech, and our original research models
+
+The model dropdown offers **Gemma 4**, **GLM 4.7 Flash**, **Qwen 3.8**, and **NOVA Tiny (local experiment)**.
+The first three use Cloudflare Workers AI **only after deploying and configuring the Worker**. They are third-party open-weight models, not original NOVA weights. Usage and availability depend on the Cloudflare account and model catalog.
+NOVA Tiny is a locally trained *word-transition model* with a tiny corpus. It is not a language model comparable to Claude and cannot reliably answer general questions. You can teach it short examples in Settings.
+
+The new **training/train_nova.py** file implements a separate, genuinely original decoder-only *neural transformer* that can be trained from scratch using the data files. This neural checkpoint does not yet run in NOVA's web interface and requires substantial further development. See [training/README.md](training/README.md).
+
+The **microphone** control uses browser speech recognition where supported; microphone permission is required, and results are inserted into the composer. **Listen** uses the device's speech-synthesis voices to read a response aloud, with an optional auto-read setting. These are browser features, not a custom trained speech model.
+
+### Hosting status
+
+The GitHub Pages site provides the offline workspace and experimental local model, including saved files. The online features (hosted model chat, web reference search and AI-generated files) require the separate Cloudflare Worker. If the Cloudflare Worker has not been deployed, choosing Gemma/GLM/Qwen will show a setup message instead of pretending to answer.
+
+User data is stored in that browser by default. Speech input may involve the browser vendor's speech service; check your browser's privacy terms. AI chat sent to the Cloudflare backend shares submitted content with that service. Keep credentials in Worker secrets only.
+
 ## Project status
 
 Source uploaded to GitHub. The root page is an **offline workspace** until GitHub Pages is enabled. **Live AI is not deployed** until the Cloudflare Worker is published and configured.
