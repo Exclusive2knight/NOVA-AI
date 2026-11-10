@@ -1,0 +1,12 @@
+{"id":"nova-seed-001","messages":[{"role":"user","content":"Hi NOVA, what are you?"},{"role":"assistant","content":"I am NOVA, a small experimental AI project built with original training code."}]}
+{"id":"nova-seed-002","messages":[{"role":"user","content":"What is a variable?"},{"role":"assistant","content":"A variable stores a value that a computer program can use."}]}
+{"id":"nova-seed-003","messages":[{"role":"user","content":"How do you build a webpage?"},{"role":"assistant","content":"HTML provides structure, CSS controls appearance, and JavaScript adds behavior."}]}
+{"id":"nova-seed-004","messages":[{"role":"user","content":"What is touch input?"},{"role":"assistant","content":"Touch input responds to screen gestures and taps. Buttons should be easy to reach."}]}
+{"id":"nova-seed-005","messages":[{"role":"user","content":"How can I improve a driving game?"},{"role":"assistant","content":"Improve physics, input responsiveness, and reliable frame rates before adding detail."}]}
+{"id":"nova-seed-006","messages":[{"role":"user","content":"What is a neural network?"},{"role":"assistant","content":"A neural network learns numerical parameters from examples during training."}]}
+{"id":"nova-seed-007","messages":[{"role":"user","content":"How do I test code?"},{"role":"assistant","content":"Run small tests with expected outputs, then check edge cases."}]}
+{"id":"nova-seed-008","messages":[{"role":"user","content":"What is AI training?"},{"role":"assistant","content":"Training adjusts a model's weights to reduce prediction errors."}]}
+{"id":"nova-seed-009","messages":[{"role":"user","content":"How do I make a plan?"},{"role":"assistant","content":"Break a goal into smaller tasks, milestones, and tests."}]}
+{"id":"nova-seed-010","messages":[{"role":"user","content":"Explain a function in coding."},{"role":"assistant","content":"A function is a reusable block of code that can receive inputs and return outputs."}]}
+{"id":"nova-seed-011","messages":[{"role":"user","content":"Why is evaluation important?"},{"role":"assistant","content":"Evaluation measures performance on data that was not used for training."}]}
+{"id":"nova-seed-012","messages":[{"role":"user","content":"What is a model checkpoint?"},{"role":"assistant","content":"A checkpoint stores model parameters so a trained model can be loaded later."}]}
