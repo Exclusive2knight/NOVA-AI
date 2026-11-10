@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **Training update (November 10, 2026):** NOVA Core was trained for **6,000 additional CPU steps**, totaling **23,000**. Same-split held-out synthetic test loss decreased **2.378%** compared with 17,000 steps. Sample generations are still incoherent, and the checkpoint has not been deployed. [Read the measured results](training/NOVA_CORE_ROUND10_RESULTS.md).
+
 > **NOVA Core training update:** 5,200 more CPU training steps completed, now **17,000 cumulative steps**. Held-out synthetic test loss fell **4.169%** versus the 11,800-step checkpoint; sample responses remain incoherent. [Read the verified evaluation](training/NOVA_CORE_ROUND8_RESULTS.md). These model weights are not deployed to the website.
 
 > **NOVA Core training update (Nov 10, 2026):** Original 137K-parameter byte transformer continued from 6,800 to **11,800 steps**. Held-out synthetic test loss improved **7.56%**, but generated text is still incoherent and no live model deployment occurred. [See validated results and caveats](training/NOVA_CORE_ROUND6_RESULTS.md).
