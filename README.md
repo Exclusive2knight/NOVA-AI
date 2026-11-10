@@ -2,6 +2,14 @@
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
 
+## NOVA Native Online — sourced research without switching models
+
+**NOVA Native can now use the internet while keeping its own neural model local.** Turn on **Web** in NOVA Native to get online search excerpts and clickable reference links. The feature uses the configured Cloudflare Worker if available, and falls back to a direct Wikipedia search from GitHub Pages when the Worker is unavailable. It does **not** require Cloudflare Workers AI or a paid model, and local project generation still works as before.
+
+Native Online sends only the current search question to a reference source, not the entire chat, uploaded files or neural weights. Wikipedia is the free default; a separately configured Tavily search provider can provide broader web results for requests authenticated by the NOVA owner. This is **lookup with sources**, not unrestricted web browsing or a frontier language model.
+
+See [How to use NOVA Native Online](NOVA_NATIVE_ONLINE.md) and [the online integration tests](tests/nova_online.cjs).
+
 ## More NOVA Native requests and creative skills
 
 The original neural model recognizes **17 broad intent categories**—this is **not a limit of 17 messages**. NOVA Native and NOVA Tiny do not have a provider-side daily request quota. The optional personal daily-goal setting no longer stops local conversations, and its tracking range is up to one million/day; this is **not a guarantee of one million messages or a performance benchmark**.
