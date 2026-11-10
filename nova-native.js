@@ -218,6 +218,14 @@ function directAnswer(kind,prompt,confidence){
 function respond(prompt,{build=false,onStep}={}){
  if(!ready)throw Error('NOVA Native needs training first. Open Settings → Train NOVA Native.');
  const add=(label,type)=>{if(onStep)onStep({type:type||'work',label})};
+ // Lightweight locally handled conversation. Native is an intent router, not a
+ // general LLM; do not turn friendly questions into internet search results.
+ const casual=String(prompt||'').trim().toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+ if(/^how (?:are|ar|r) (?:we|wi|with|you|u) (?:doing|doin|ding)(?: today)?$/.test(casual)){
+  const aboutUser=/^how (?:are|ar|r) (?:you|u) /.test(casual);
+  add('Recognized a conversational question; no web search needed');
+  return {text:aboutUser?'I am here and ready to help. What would you like to work on?':'We have made progress on NOVA\'s app, web search, and cloud memory. The original on-device AI is still a small intent model and needs much more training for natural conversation. NOVA Pro is better for open-ended chat when connected.',files:[],skill:'greeting',confidence:1};
+ }
  add('Tokenizing your request locally');
  const selected=classify(prompt);add('Neural intent prediction: '+selected.intent+' ('+Math.round(selected.confidence*100)+'% confidence)');
  let kind=selected.intent;
