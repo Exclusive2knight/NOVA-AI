@@ -91,6 +91,7 @@ function shouldSearch(text,localResult,{enabled=false,build=false}={}){
  const q=String(text||'').trim().toLowerCase().replace(/\s+/g,' ');
  if(!q)return false;
  const explicit=/\b(?:search\s+(?:the\s+)?(?:web|internet|online)|search\s+for|look\s*up|browse\s+(?:the\s+)?(?:web|internet)|research\b|find\s+(?:me\s+)?(?:websites?|sources?|links?)|check\s+online|find\s+online|use\s+(?:the\s+)?internet|google\s+for)\b/i.test(q);
+ if(/\b(?:read|summarize|analyse|analyze|review|extract|explain)\b/i.test(q)&&/https:\/\//i.test(q))return true;
  if(explicit)return true;
  // Small talk (including common voice-typing mistakes) should get a regular
  // answer even when Web is turned on. Do not spend provider credits on it.
