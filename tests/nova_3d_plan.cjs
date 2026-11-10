@@ -24,7 +24,7 @@ async function main(){
  assert.equal(data.parts.length,3,'Filter invalid AI-generated primitives');
  assert.equal(calls.length,1);
  assert(calls[0].params.messages[0].content.includes('ONLY primitive meshes'));
- assert(calls[0].params.messages[0].content.includes('materials'));
+ assert(calls[0].params.messages[0].content.toLowerCase().includes('materials'));
  result=await entry.fetch(request('An off road SUV','wrong-secret'),env);
  assert.equal(result.status,401);
  result=await entry.fetch(request('A car','demo-owner-secret','https://evil.example'),env);
