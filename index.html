@@ -172,7 +172,7 @@
 <script src="./nova-create.js"></script>
 <script>(()=>{'use strict';
 const $=id=>document.getElementById(id);const KEY='nova-v3-workspace-1';const DEFAULT_MODEL='native';const DEFAULT_BACKEND='https://nova-ai.jmoreygreer.workers.dev';
-const introTemplate=$('intro').cloneNode(true);const state=load();state.model=state.model||DEFAULT_MODEL;state.tinyExamples=Array.isArray(state.tinyExamples)?state.tinyExamples:[];state.autoSpeak=!!state.autoSpeak;state.voiceRate=Number(state.voiceRate)||1;state.usage=state.usage&&typeof state.usage==='object'&&state.usage.days?state.usage:{days:{}};state.dailyLimit=Math.max(10,Math.min(1000000,Number(state.dailyLimit)||1000));state.weeklyLimit=Math.max(100,Math.min(7000000,Number(state.weeklyLimit)||7000));state.enforceLimit=!!state.enforceLimit;state.responseLength=state.responseLength||'balanced';state.reasoningLevel=state.reasoningLevel||'auto';state.responseTone=state.responseTone||'professional';state.creativity=state.creativity||'balanced';state.theme=state.theme||'dark';state.voiceChoice=state.voiceChoice||'';state.backendUrl=typeof state.backendUrl==='string'&&state.backendUrl.trim()?state.backendUrl:DEFAULT_BACKEND;state.artifacts=Array.isArray(state.artifacts)?state.artifacts.slice(-10):[];state.activeArtifact=state.activeArtifact||null;state.feedback=Array.isArray(state.feedback)?state.feedback.slice(-200):[];state.density=['comfortable','compact'].includes(state.density)?state.density:'comfortable';state.motion=['system','subtle','full','off'].includes(state.motion)?state.motion:'system';state.slangAssist=state.slangAssist!==false;state.showActivity=state.showActivity!==false;state.focusMode=!!state.focusMode;state.cloudMemoryOn=!!state.cloudMemoryOn;let cloudMemoryExtra='';let pendingFiles=[],modelReady=false,webReady=false,searchMode='wikipedia',busy=false,aborter=null,toastTimer=null,chosenFile=state.chosenFile||null,currentTab='chat',recognition=null,installPrompt=null;
+const introTemplate=$('intro').cloneNode(true);const state=load();state.model=state.model||DEFAULT_MODEL;state.tinyExamples=Array.isArray(state.tinyExamples)?state.tinyExamples:[];state.autoSpeak=!!state.autoSpeak;state.voiceRate=Number(state.voiceRate)||1;state.usage=state.usage&&typeof state.usage==='object'&&state.usage.days?state.usage:{days:{}};state.dailyLimit=Math.max(10,Math.min(1000000,Number(state.dailyLimit)||1000));state.weeklyLimit=Math.max(100,Math.min(7000000,Number(state.weeklyLimit)||7000));state.enforceLimit=!!state.enforceLimit;state.responseLength=state.responseLength||'balanced';state.reasoningLevel=state.reasoningLevel||'auto';state.responseTone=state.responseTone||'professional';state.creativity=state.creativity||'balanced';state.theme=state.theme||'dark';state.voiceChoice=state.voiceChoice||'';state.backendUrl=typeof state.backendUrl==='string'&&state.backendUrl.trim()?state.backendUrl:DEFAULT_BACKEND;state.artifacts=Array.isArray(state.artifacts)?state.artifacts.slice(-10):[];state.activeArtifact=state.activeArtifact||null;state.feedback=Array.isArray(state.feedback)?state.feedback.slice(-200):[];state.density=['comfortable','compact'].includes(state.density)?state.density:'comfortable';state.motion=['system','subtle','full','off'].includes(state.motion)?state.motion:'system';state.slangAssist=state.slangAssist!==false;state.showActivity=state.showActivity!==false;state.focusMode=!!state.focusMode;state.cloudMemoryOn=!!state.cloudMemoryOn;let cloudMemoryExtra='';const ephemeralCreatedAssets=new Map();let creatorMode='image',lastCreatorAsset=null,creatorYaw=.72,creatorAbort=null;let pendingFiles=[],modelReady=false,webReady=false,searchMode='wikipedia',busy=false,aborter=null,toastTimer=null,chosenFile=state.chosenFile||null,currentTab='chat',recognition=null,installPrompt=null;
 
 const MODELS=['native','pro','gemma','glm','qwen','nova-tiny'];
 const MODEL_NAMES={native:'NOVA Native',pro:'NOVA Pro',gemma:'Gemma 4',glm:'GLM 4.7 Flash',qwen:'Qwen 3.8','nova-tiny':'NOVA Tiny'};
@@ -252,6 +252,20 @@ function lineText(parent,s){let remainder=String(s||'');const parts=remainder.sp
 const animatedMessages=new WeakSet();
 function renderMessages(){const wrap=$('messages'),chat=activeChat();wrap.replaceChildren();if(!chat?.messages.length){wrap.append(introTemplate.cloneNode(true));bindSuggestions();return}
  for(const m of chat.messages){const row=document.createElement('div');row.className='message '+m.role;if(!animatedMessages.has(m)){row.classList.add('fresh');animatedMessages.add(m)}if(m.role==='assistant'&&busy&&m===chat.messages[chat.messages.length-1])row.classList.add('is-processing');if(m.role==='assistant'){const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent='N';row.append(avatar)}const outer=document.createElement('div');outer.className='bubble';lineText(outer,m.content||'');
+ if(m.role==='assistant'&&m.createdAssetKey){
+  const asset=ephemeralCreatedAssets.get(m.createdAssetKey);
+  if(asset){
+   if(asset.type==='image'){
+    const image=document.createElement('img');image.className='nova-chat-image';image.alt='NOVA-generated picture';image.src=asset.preview;outer.append(image);
+   }
+   const button=document.createElement('button');button.type='button';button.className='nova-created-file';
+   button.textContent=asset.type==='image'?'↓ Download image':'↓ Download GLB model';
+   button.onclick=()=>downloadCreatedAsset(asset);outer.append(button);
+  }else{
+   const note=document.createElement('p');note.className='help';
+   note.textContent='The generated file preview was temporary. Generate it again or use your saved download.';outer.append(note);
+  }
+ }
  if(m.role==='assistant'&&m.interpretation&&state.slangAssist){const info=document.createElement('div');info.className='native-pill';info.style.marginTop='9px';info.textContent='Interpreted: '+m.interpretation.slice(0,250);outer.append(info)}
  if(m.role==='assistant'&&state.showActivity&&Array.isArray(m.steps)&&m.steps.length){
   const details=document.createElement('details');details.className='native-activity';
@@ -571,9 +585,83 @@ async function analyzePhoto(file){
  }catch(error){answer.content=error.name==='AbortError'?'Photo analysis cancelled.':String(error.message||error)}
  finally{busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons()}
 }
+function openCreateStudio(mode,prompt=''){
+ if(busy)return notice('Finish the current request before creating another asset');
+ if(!window.NOVACreate||!window.NOVA3D)return notice('Creative tools did not load. Refresh the latest NOVA website.');
+ creatorMode=mode==='glb'?'glb':'image';
+ const is3D=creatorMode==='glb';
+ $('novaCreateTitle').textContent=is3D?'Create a downloadable GLB starter model':'Generate an AI image';
+ $('novaCreateIntro').textContent=is3D?'Create a real, simple GLB 2.0 mesh on this device, for Blender and your games. No AI credits needed.':'Create a picture using Cloudflare FLUX.1 schnell. Requires a connected Worker and the owner passcode.';
+ $('novaImageOptions').hidden=is3D;$('novaGLBOptions').hidden=!is3D;
+ $('novaCreateRun').textContent=is3D?'Make GLB model':'Generate image';
+ $('novaCreatePrompt').value=String(prompt||$('messageInput').value||'').slice(0,1800);
+ $('novaCreateStatus').textContent='Ready · Results can be downloaded.';
+ $('novaCreatedImage').hidden=true;$('novaCreated3D').hidden=true;
+ $('novaCreatedDescription').textContent='';
+ $('novaCreateDownload').hidden=true;$('novaCreateSpec').hidden=true;
+ lastCreatorAsset=null;creatorYaw=.72;
+ $('novaCreateDialog').showModal();
+ $('novaCreatePrompt').focus();
+}
+function downloadCreatedAsset(asset){
+ if(!asset)return notice('Generate something first');
+ download(asset.filename,asset.bytes,asset.type==='image'?'image/jpeg':'model/gltf-binary');
+ notice('Downloading '+asset.filename);
+}
+function addCreationToChat(prompt,asset){
+ const conversation=ensureChat();
+ if(conversation.messages.length===0)conversation.title=(asset.type==='image'?'Image: ':'GLB: ')+prompt.slice(0,48);
+ conversation.messages.push({role:'user',content:(asset.type==='image'?'Generate image: ':'Create GLB model: ')+prompt});
+ const token=id();ephemeralCreatedAssets.set(token,asset);
+ conversation.messages.push({role:'assistant',
+  content:asset.type==='image'?'I generated the picture using Cloudflare FLUX.1 schnell. Download it to keep it.':'I generated a real downloadable GLB 2.0 starter mesh with '+asset.scene.parts.length+' parts. You can import it into Blender; it is not a fully detailed production model.',
+  createdAssetKey:token});
+ conversation.updated=Date.now();save();renderChats();renderMessages();
+}
+async function runCreateStudio(){
+ if(busy)return notice('NOVA is completing another request');
+ const prompt=$('novaCreatePrompt').value.trim();
+ if(!prompt)return notice('Describe what NOVA should make.');
+ if(prompt.length>1800)return notice('Keep the description under 1,800 characters.');
+ const run=$('novaCreateRun');run.disabled=true;busy=true;creatorAbort=new AbortController();setButtons();
+ $('novaCreateStatus').textContent=creatorMode==='glb'?'Building GLB mesh on your device…':'Contacting Cloudflare image generation…';
+ $('novaCreatedImage').hidden=true;$('novaCreated3D').hidden=true;
+ $('novaCreateDownload').hidden=true;$('novaCreateSpec').hidden=true;
+ try{
+  let asset;
+  if(creatorMode==='image'){
+   if(!state.passcode||state.passcode.length<8)throw Error('Set your NOVA owner passcode in Settings first. Cloudflare must be deployed with an AI binding.');
+   const data=await NOVACreate.generateImage(apiEndpoint(''),state.passcode,{
+    prompt,style:$('novaImageStyle').value,ratio:$('novaImageRatio').value
+   },creatorAbort.signal);
+   const jpeg=await NOVACreate.cropJPEG(data.image,$('novaImageRatio').value);
+   const bytes=NOVACreate.dataToBytes(jpeg);
+   asset={type:'image',bytes,filename:'NOVA_image_'+Date.now()+'.jpg',preview:jpeg};
+   $('novaCreatedImage').src=jpeg;$('novaCreatedImage').hidden=false;
+   $('novaCreatedDescription').textContent='Generated with '+data.model+'. Download to save; the image itself is not put into cloud memory.';
+   recordUsage('pro');
+  }else{
+   const result=NOVA3D.build(prompt,{kind:$('novaGLBKind').value,detail:$('novaGLBDetail').value});
+   asset={type:'glb',bytes:result.bytes,filename:result.filename,scene:result.scene};
+   $('novaCreated3D').hidden=false;
+   NOVACreate.drawPreview($('novaCreated3D'),result.scene,creatorYaw);
+   $('novaCreatedDescription').textContent='Real GLB file · '+result.scene.parts.length+' components · '+Math.round(result.bytes.length/1024)+' KB · Schematic preview; the mesh is a simplified starter.';
+  }
+  lastCreatorAsset=asset;
+  $('novaCreateDownload').textContent=asset.type==='image'?'↓ Download JPG':'↓ Download GLB';
+  $('novaCreateDownload').hidden=false;
+  $('novaCreateSpec').hidden=asset.type!=='glb';
+  $('novaCreateStatus').textContent='Created successfully. Download your file before refreshing.';
+  addCreationToChat(prompt,asset);
+  if($('messageInput').value.trim()===prompt){$('messageInput').value='';resizePrompt()}
+ }catch(error){
+  $('novaCreateStatus').textContent=error?.name==='AbortError'?'Generation canceled.':String(error?.message||'Generation failed.');
+ }finally{busy=false;creatorAbort=null;run.disabled=false;setButtons()}
+}
 async function sendMessage(){
  if(busy){aborter?.abort();notice('Stopping current reply…');return}
  const input=$('messageInput'),promptText=input.value.trim();if(!promptText)return;
+ const creationIntent=window.NOVACreate?.route(promptText);if(creationIntent){openCreateStudio(creationIntent,promptText);return}
  if(promptText.length>12000)return notice('Message must be under 12,000 characters');
  if(!['native','nova-tiny'].includes(state.model)&&state.enforceLimit&&usageStats().today>=state.dailyLimit)return notice('Hosted request goal reached. Adjust Settings to continue. Local NOVA Native messages remain available.');
  const chat=ensureChat(),sentModel=state.model;
@@ -913,6 +1001,24 @@ function init(){ensureChat();
  $('modelSelect').value=state.model;setTheme();save();setButtons();renderMessages();status();$('settingsDialog').close();notice(state.model==='native'?'NOVA settings saved locally':'Settings saved · Checking hosted connection')});
  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));$('messageInput').addEventListener('input',resizePrompt);$('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!window.matchMedia('(pointer:coarse)').matches){e.preventDefault();sendMessage()}});$('sendBtn').addEventListener('click',sendMessage);
  $('searchToggle').addEventListener('click',()=>{state.search=!state.search;save();setButtons();status();if(state.search)notice(state.model==='native'?'Web is on · NOVA searches factual questions, not casual messages':webReady?(searchMode==='web'?'Web on · searches when relevant':'Web on · Wikipedia references when relevant'):'Web uses your Worker when deployed');else notice('Web search disabled · NOVA Native stays local')});$('buildToggle').addEventListener('click',()=>{state.build=!state.build;save();setButtons();notice(state.build?'Build mode enabled · Ask for a website or code project':'Chat mode enabled')});
+ $('openImageCreator').addEventListener('click',()=>openCreateStudio('image'));
+ $('openGLBCreator').addEventListener('click',()=>openCreateStudio('glb'));
+ $('novaCreateRun').addEventListener('click',runCreateStudio);
+ $('novaCreateDownload').addEventListener('click',()=>downloadCreatedAsset(lastCreatorAsset));
+ $('novaCreateSpec').addEventListener('click',()=>{
+  if(!lastCreatorAsset||lastCreatorAsset.type!=='glb')return;
+  const spec={version:1,generator:'NOVA 3D Studio',...lastCreatorAsset.scene};
+  download(lastCreatorAsset.filename.replace(/\\.glb$/i,'')+'_spec.json',JSON.stringify(spec,null,2),'application/json');
+ });
+ $('novaCreateDialog').addEventListener('close',()=>creatorAbort?.abort());
+ let startPointer=null;
+ $('novaCreated3D').addEventListener('pointerdown',e=>{if(!lastCreatorAsset||lastCreatorAsset.type!=='glb')return;startPointer=e.clientX;try{e.currentTarget.setPointerCapture(e.pointerId)}catch{}});
+ $('novaCreated3D').addEventListener('pointermove',e=>{
+  if(startPointer===null||!lastCreatorAsset||lastCreatorAsset.type!=='glb')return;
+  creatorYaw+=(e.clientX-startPointer)*.009;startPointer=e.clientX;
+  NOVACreate.drawPreview($('novaCreated3D'),lastCreatorAsset.scene,creatorYaw);
+ });
+ for(const eventName of ['pointerup','pointercancel','lostpointercapture'])$('novaCreated3D').addEventListener(eventName,()=>startPointer=null);
  $('photoButton').addEventListener('click',()=>{$('photoInput').click()});
  $('photoInput').addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';if(file)await analyzePhoto(file)});
  $('attachBtn').addEventListener('click',()=>$('attachInput').click());$('attachInput').addEventListener('change',async e=>{await importText(e.target.files,true);e.target.value=''});$('importFiles').addEventListener('click',()=>$('importInput').click());$('importInput').addEventListener('change',async e=>{await importText(e.target.files,false);e.target.value=''});
