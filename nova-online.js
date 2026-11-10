@@ -96,7 +96,7 @@ function shouldSearch(text,localResult,{enabled=false,build=false}={}){
  // Small talk (including common voice-typing mistakes) should get a regular
  // answer even when Web is turned on. Do not spend provider credits on it.
  const social=q.replace(/[.!?,]+$/g,'').trim();
- if(/^(?:hi|hey|hello|yo|sup|good (?:morning|afternoon|evening|night)|thank(?:s| you)|what(?:'s| is) up|how(?:'s| is) it going|how(?:'s| is) everything going|how (?:are|ar|r) (?:you|u|we|wi|with) (?:doing|doin|ding|going)(?: (?:today|now))?|what (?:are|r) we doing|who are you|what can you do|how was your day)$/.test(social))return false;
+ if(/^(?:hi|hey|hello|yo|sup|good (?:morning|afternoon|evening|night)|thank(?:s| you)|what(?:'s| is) up|how(?:'s| is) it going|how(?:'s| is) everything going|how (?:are|ar|r) (?:you|u|we|wi|with) (?:doing|doin|ding|going)(?: (?:today|now))?|what (?:are|r) we doing(?: (?:today|now))?|who are you|what can you do|how was your day)$/.test(social))return false;
  if(['clarify','math','greeting'].includes(localResult?.skill))return false;
  if(/^(?:please\s+)?(?:make|build|create|design|generate)\s+(?:me\s+)?(?:a|an|the)?\s*/i.test(q))return false;
  // Personal and follow-up questions are conversations, not internet queries.
