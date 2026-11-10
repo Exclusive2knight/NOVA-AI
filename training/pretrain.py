@@ -32,11 +32,33 @@ def read_split(corpus_dir, split):
         records.append(obj["text"])
     return records
 
+def read_synthetic(filename):
+    texts = []
+    for line in Path(filename).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        obj = json.loads(line)
+        if obj.get("synthetic") is not True or obj.get("split") != "train":
+            raise ValueError("Only explicitly labeled training-only synthetic examples are accepted")
+        turns = obj.get("messages", [])
+        if not isinstance(turns, list) or len(turns) < 2:
+            raise ValueError("Malformed synthetic conversation")
+        lines = []
+        for msg in turns:
+            if msg.get("role") in {"user", "assistant"} and isinstance(msg.get("content"), str):
+                lines.append(("User" if msg["role"]=="user" else "NOVA")+": "+msg["content"])
+        if len(lines) < 2:
+            raise ValueError("Synthetic record missing required turns")
+        texts.append("\n".join(lines)+"\n")
+    return texts
+
 def train(args):
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     train_docs = read_split(args.corpus, "train")
     valid_docs = read_split(args.corpus, "valid")
+    for path in args.synthetic:
+        train_docs.extend(read_synthetic(path))
     if not train_docs or not valid_docs:
         raise ValueError("Non-empty independent train and valid splits are required")
     config = dict(PROFILES[args.profile])
@@ -89,6 +111,7 @@ def main():
     p.add_argument("--corpus",required=True)
     p.add_argument("--profile",choices=tuple(PROFILES),default="tiny")
     p.add_argument("--context",type=int,default=None)
+    p.add_argument("--synthetic",action="append",default=[],help="Training-only synthetic JSONL; can repeat")
     p.add_argument("--steps",type=int,default=10)
     p.add_argument("--batch",type=int,default=4)
     p.add_argument("--eval-every",type=int,default=20)
