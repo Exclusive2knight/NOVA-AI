@@ -1,4 +1,12 @@
-# Connect the live NOVA website to Cloudflare AI
+# Connect NOVA to the deployed Cloudflare Worker
+
+**Your known Worker address:** https://nova-ai.jmoreygreer.workers.dev
+
+**Check API status:** https://nova-ai.jmoreygreer.workers.dev/api/status
+
+**Your published website:** https://exclusive2knight.github.io/NOVA-AI/
+
+NOVA now prepopulates its Cloudflare backend URL with your known Worker address on devices where you have not already selected another server. You still must configure the **Workers AI binding named `AI`** and the **`NOVA_PASSCODE` Worker secret. No secrets belong in GitHub, screenshots, or chat. A successful `/api/status` check should report `"ai": true` and `"passcodeProtected": true`. This proves only that the Worker advertises those configurations, not that every model invocation succeeds.
 
 **Website:** https://exclusive2knight.github.io/NOVA-AI/
 
@@ -11,10 +19,10 @@ You only need to do this once, using a Cloudflare account eligible to use Worker
 1. Sign in to https://dash.cloudflare.com/ and open **Workers & Pages**.
 2. Click **Create application**, choose **Import an existing Git repository** / **GitHub**.
 3. If prompted, authorize the **Cloudflare Workers and Pages** GitHub integration for your own `Exclusive2knight/NOVA-AI` repository. Choose that repository, then branch `main`.
-4. Set the **Worker name** to **`nova-ai-workshop`** (it must match the `name` in the Wrangler configuration).
+4. Set the **Worker name** to **`nova-ai`** (it must match the `name` in the Wrangler configuration).
 5. Set **Root directory** to **`cloudflare`** (not the repository root).
 6. Leave the optional **Build command** blank. Set **Deploy command** to **`npx wrangler deploy`** (the default).
-7. Click **Save and Deploy**. After a successful deploy, Cloudflare will provide a full HTTPS address like `https://nova-ai-workshop.YOUR-SUBDOMAIN.workers.dev`. It will not be exactly this example; **copy your actual URL**.
+7. Click **Save and Deploy**. After a successful deploy, Cloudflare will provide a full HTTPS address like `https://nova-ai.jmoreygreer.workers.dev`. It will not be exactly this example; **copy your actual URL**.
 
 The project configuration is already committed as `cloudflare/wrangler.jsonc`, with an **AI binding** named **`AI`**. If the Worker does not see it, open the deployed Worker **Settings → Bindings**, add **Workers AI**, and set the variable name to `AI`; then deploy again.
 
