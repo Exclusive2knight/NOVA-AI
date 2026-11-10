@@ -109,7 +109,7 @@
         </div>
         <div class="composer-shell"><div id="activityLive" class="native-live" role="status" aria-live="polite" hidden></div><div id="conversationNotice" class="chat-resume-banner" hidden></div><div class="composer"><div class="attachment-list" id="attachmentList"></div><textarea id="messageInput" rows="1" placeholder="Message NOVA…" aria-label="Your message"></textarea><div class="compose-row"><div class="compose-tools"><button id="attachBtn" class="tool-button" aria-label="Attach text files" title="Attach text files">＋</button><button id="photoButton" class="tool-button" type="button" title="Ask NOVA Pro about a photo (Cloudflare Vision)" aria-label="Analyze a photo">📷</button><button id="searchToggle" class="tool-button" aria-pressed="false" title="Search the web">⌕ <span>Web</span></button><button id="buildToggle" class="tool-button" aria-pressed="false" title="Generate editable project files">◇ <span>Build</span></button><button id="voiceButton" class="tool-button" title="Dictate message" aria-label="Talk to NOVA">🎙</button><button id="stopSpeech" class="tool-button" title="Stop NOVA speaking" aria-label="Stop speech">◼</button></div><button id="sendBtn" class="send-button" aria-label="Send message">↑</button></div></div><div class="under-composer" id="usageNote">Offline workspace ready · Connect Cloudflare AI in Settings for live answers.</div></div>
       </section>
-      <section class="work-section" id="workSection" aria-label="File workspace"><div class="work-head"><div><span class="eyebrow">LIVE WORKSPACE</span><h2>Project files</h2></div><button id="addFile" class="mini-button">＋ New</button></div><div class="artifact-workspace-tabs"><button type="button" id="artifactCodeTab" class="active">Code</button><button type="button" id="artifactPreviewTab">Live preview</button></div><div id="artifactLibrary" class="artifact-library" aria-label="Saved artifacts"></div><div class="work-tools"><button id="importFiles">⇧ Import</button><button id="exportZip">⇩ ZIP</button><button id="previewBtn">◈ Preview</button></div><div id="artifactCodePane" class="artifact-pane"><div class="file-list" id="fileList"><div class="empty-files">No project files yet. Use <strong>Build</strong> to ask NOVA to create them, or start from a template.</div></div><div class="editor-head"><span id="editingName">No file selected</span><div><button id="downloadFile" class="tiny-btn" aria-label="Download selected file" title="Download file">⇩</button><button id="deleteFile" class="tiny-btn danger" aria-label="Delete selected file" title="Delete file">×</button></div></div><textarea class="code-editor" id="codeEditor" aria-label="File editor" spellcheck="false" placeholder="Select a file to edit…" disabled></textarea><div class="work-tip">Code runs only in a sandboxed preview—not on NOVA's server.</div></div><div id="artifactPreviewPane" class="artifact-pane" hidden><div class="artifact-toolbar"><button type="button" id="artifactRefresh">↻ Refresh</button><button type="button" id="artifactOpenDialog">↗ Expand</button><button type="button" id="artifactExportZip">↓ ZIP</button><button type="button" id="artifactFixErrors" title="Prepare a NOVA Pro repair request using preview errors">✦ Fix errors</button></div><iframe id="artifactFrame" title="NOVA artifact preview" sandbox="allow-scripts" referrerpolicy="no-referrer" class="artifact-inner-frame"></iframe><div class="work-tip" id="artifactDiagnostics" role="status" aria-live="polite">Preview error diagnostics: run Refresh to check your HTML and JavaScript. Errors stay on this device.</div><div class="work-tip">Artifact code runs in an isolated sandbox, without access to your NOVA chats or local files. Fixing errors uses your configured hosted model and requires your approval.</div></div></section>
+      <section class="work-section" id="workSection" aria-label="File workspace"><div class="work-head"><div><span class="eyebrow">LIVE WORKSPACE</span><h2>Project files</h2></div><button id="addFile" class="mini-button">＋ New</button></div><div class="artifact-workspace-tabs"><button type="button" id="artifactCodeTab" class="active">Code</button><button type="button" id="artifactPreviewTab">Live preview</button></div><div id="artifactLibrary" class="artifact-library" aria-label="Saved artifacts"></div><div class="work-tools"><button id="importFiles">⇧ Import</button><button id="exportZip">⇩ ZIP</button><button id="previewBtn">◈ Preview</button></div><div id="artifactCodePane" class="artifact-pane"><div class="file-list" id="fileList"><div class="empty-files">No project files yet. Use <strong>Build</strong> to ask NOVA to create them, or start from a template.</div></div><div class="editor-head"><span id="editingName">No file selected</span><div><button id="downloadFile" class="tiny-btn" aria-label="Download selected file" title="Download file">⇩</button><button id="deleteFile" class="tiny-btn danger" aria-label="Delete selected file" title="Delete file">×</button></div></div><textarea class="code-editor" id="codeEditor" aria-label="File editor" spellcheck="false" placeholder="Select a file to edit…" disabled></textarea><div class="work-tip">Code runs only in a sandboxed preview—not on NOVA's server.</div></div><div id="artifactPreviewPane" class="artifact-pane" hidden><div class="artifact-toolbar"><button type="button" id="artifactRefresh">↻ Refresh</button><button type="button" id="artifactCheck">✓ Check code</button><button type="button" id="artifactOpenDialog">↗ Expand</button><button type="button" id="artifactExportZip">↓ ZIP</button><button type="button" id="artifactFixErrors" title="Prepare a NOVA Pro repair request using preview errors">✦ Fix errors</button></div><iframe id="artifactFrame" title="NOVA artifact preview" sandbox="allow-scripts" referrerpolicy="no-referrer" class="artifact-inner-frame"></iframe><div class="work-tip" id="artifactDiagnostics" role="status" aria-live="polite">Preview error diagnostics: run Refresh to check your HTML and JavaScript. Errors stay on this device.</div><div class="work-tip">Artifact code runs in an isolated sandbox, without access to your NOVA chats or local files. Fixing errors uses your configured hosted model and requires your approval.</div></div></section>
     </div>
     <nav class="mobile-tabs" aria-label="Mobile navigation"><button data-tab="chat" class="active"><span>◉</span> Chat</button><button data-tab="files"><span>▤</span> Files</button><button data-tab="history"><span>☷</span> Chats</button><button data-tab="settings"><span>⚙</span> Settings</button></nav>
   </div>
@@ -156,6 +156,7 @@
 <script src="./nova-skills.js"></script>
 <script src="./nova-language.js"></script>
 <script src="./nova-online.js"></script>
+<script src="./nova-project-check.js"></script>
 <script>(()=>{'use strict';
 const $=id=>document.getElementById(id);const KEY='nova-v3-workspace-1';const DEFAULT_MODEL='native';const DEFAULT_BACKEND='https://nova-ai.jmoreygreer.workers.dev';
 const introTemplate=$('intro').cloneNode(true);const state=load();state.model=state.model||DEFAULT_MODEL;state.tinyExamples=Array.isArray(state.tinyExamples)?state.tinyExamples:[];state.autoSpeak=!!state.autoSpeak;state.voiceRate=Number(state.voiceRate)||1;state.usage=state.usage&&typeof state.usage==='object'&&state.usage.days?state.usage:{days:{}};state.dailyLimit=Math.max(10,Math.min(1000000,Number(state.dailyLimit)||1000));state.weeklyLimit=Math.max(100,Math.min(7000000,Number(state.weeklyLimit)||7000));state.enforceLimit=!!state.enforceLimit;state.responseLength=state.responseLength||'balanced';state.reasoningLevel=state.reasoningLevel||'auto';state.responseTone=state.responseTone||'professional';state.creativity=state.creativity||'balanced';state.theme=state.theme||'dark';state.voiceChoice=state.voiceChoice||'';state.backendUrl=typeof state.backendUrl==='string'&&state.backendUrl.trim()?state.backendUrl:DEFAULT_BACKEND;state.artifacts=Array.isArray(state.artifacts)?state.artifacts.slice(-10):[];state.activeArtifact=state.activeArtifact||null;state.feedback=Array.isArray(state.feedback)?state.feedback.slice(-200):[];state.density=['comfortable','compact'].includes(state.density)?state.density:'comfortable';state.motion=['system','subtle','full','off'].includes(state.motion)?state.motion:'system';state.slangAssist=state.slangAssist!==false;state.showActivity=state.showActivity!==false;state.focusMode=!!state.focusMode;state.cloudMemoryOn=!!state.cloudMemoryOn;let cloudMemoryExtra='';let pendingFiles=[],modelReady=false,webReady=false,searchMode='wikipedia',busy=false,aborter=null,toastTimer=null,chosenFile=state.chosenFile||null,currentTab='chat',recognition=null,installPrompt=null;
@@ -648,6 +649,7 @@ function renderArtifactLibrary(){
  }
 }
 let previewErrors=[];
+let projectIssues=[];
 function instrumentPreview(html){
  const tracker="<script>(function(){function report(msg){try{parent.postMessage({type:\"NOVA_PREVIEW_ERROR\",message:String(msg||\"Script error\").slice(0,350)},\"*\")}catch(e){}}window.addEventListener(\"error\",function(e){report(e.message||\"Script error\")});window.addEventListener(\"unhandledrejection\",function(e){report(\"Unhandled rejection: \"+String(e.reason&&e.reason.message||e.reason||\"unknown\"))})})();<\/script>";
  const src=String(html||'');
@@ -676,10 +678,21 @@ function artifactDocument(files){
  if(path.endsWith('.svg'))return files[path];
  return '<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:15px/1.6 system-ui;margin:20px"><h2>'+escape(path)+'</h2><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escape(files[path]||'')+'</pre></body></html>';
 }
+function runProjectCheck(files){
+ const report=window.NOVAProjectCheck?.inspect(files||{});
+ projectIssues=(report?.issues||[]).slice(0,40);
+ const count=(report?.errors||0)+(report?.warnings||0);
+ $('artifactDiagnostics').textContent=count
+  ?'Static check: '+report.errors+' error(s), '+report.warnings+' warning(s). '+projectIssues.slice(0,4).map(i=>i.file+': '+i.message).join(' | ')
+  :'Static check found no missing files or duplicate IDs. Runtime issues will appear here after refreshing.';
+ return report;
+}
 function refreshArtifactPreview(){
- previewErrors=[];$('artifactDiagnostics').textContent='No JavaScript errors reported yet. Refresh runs code in an isolated preview.';
+ previewErrors=[];
  const a=findArtifact(state.activeArtifact);
- $('artifactFrame').srcdoc=artifactDocument(a?a.files:state.files);
+ const files=a?a.files:state.files;
+ runProjectCheck(files);
+ $('artifactFrame').srcdoc=artifactDocument(files);
 }
 function setArtifactView(which){
  const preview=which==='preview';
@@ -880,9 +893,10 @@ function init(){ensureChat();
  $('artifactCodeTab').addEventListener('click',()=>setArtifactView('code'));
  $('artifactPreviewTab').addEventListener('click',()=>setArtifactView('preview'));
  $('artifactRefresh').addEventListener('click',refreshArtifactPreview);
+ $('artifactCheck').addEventListener('click',()=>{const a=findArtifact(state.activeArtifact);const report=runProjectCheck(a?a.files:state.files);notice('Checked '+(report?.filesChecked||0)+' project file(s)')});
  $('artifactFixErrors').addEventListener('click',()=>{
   if(busy)return notice('Finish the current response first');
-  if(!previewErrors.length)return notice('No preview script errors found yet · Refresh and run the project first');
+  if(!previewErrors.length&&!projectIssues.length)return notice('No static or preview errors found yet · Refresh and run the project first');
   const a=findArtifact(state.activeArtifact);
   if(a){
    const conflicts=Object.keys(a.files).filter(path=>state.files[path]!==undefined&&state.files[path]!==a.files[path]);
@@ -891,7 +905,7 @@ function init(){ensureChat();
   }
   state.model='pro';state.build=true;state.search=false;
   $('modelSelect').value='pro';syncSettings();save();setButtons();status();
-  $('messageInput').value='Fix the JavaScript errors in my current project, preserving its features and appearance. The preview reported:\n'+previewErrors.map(x=>'- '+x).join('\n').slice(0,1600)+'\nReturn the corrected project files and explain what changed.';
+  $('messageInput').value='Fix the problems in my current project, preserving its features and appearance. Static checks and preview reported:\n'+[...projectIssues.map(x=>x.severity+': '+x.file+': '+x.message),...previewErrors.map(x=>'runtime: '+x)].slice(0,15).map(x=>'- '+x).join('\n').slice(0,2300)+'\nReturn corrected project files and explain what changed.';
   resizePrompt();tab('chat');$('messageInput').focus();
   notice('Repair prompt prepared · Review it, then press Send to use NOVA Pro');
  });
