@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **NOVA Core training update (Nov 10, 2026):** Original 137K-parameter byte transformer continued from 6,800 to **11,800 steps**. Held-out synthetic test loss improved **7.56%**, but generated text is still incoherent and no live model deployment occurred. [See validated results and caveats](training/NOVA_CORE_ROUND6_RESULTS.md).
+
 > **NEW: NOVA Open Model training.** [Training guide](training/NOVA_OPEN_TRAINING_GUIDE.md) · [Colab GPU notebook](training/NOVA_Open_Training_Colab.ipynb). Adds supervised LoRA fine-tuning, curated training/validation/test data, held-out evaluation and a local adapter test. This **does not** train ChatGPT/Claude or replace the deployed NOVA Pro model automatically.
 
 > **NEW NOVA Create Studio:** [Generate pictures and genuine downloadable GLB starter models](NOVA_CREATE_STUDIO.md) from one prompt. Image creation runs through Cloudflare FLUX when connected; basic GLB creation works offline on your phone. An optional Pro mode plans custom 3D parts. These are starter meshes rather than finished high-detail vehicle models.
