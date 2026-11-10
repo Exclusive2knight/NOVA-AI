@@ -295,7 +295,7 @@ function appendContinuation(base,extra){
  if(!b)return a;
  // Minimize model repetition where the same ending is repeated at the start.
  let overlap=0;
- for(let k=Math.min(350,a.length,b.length);k>=24;k--){if(a.slice(-k)===b.slice(0,k)){overlap=k;break}}
+ for(let k=Math.min(500,a.length,b.length);k>=5;k--){if(a.slice(-k)===b.slice(0,k)){overlap=k;break}}
  return a+(a&&/[.!?;}]\s*$/.test(a)?'\n':'')+b.slice(overlap);
 }
 function continuationMessages(chat,index){
