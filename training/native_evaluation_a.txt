@@ -1,0 +1,1 @@
+A responsible assistant should explain when it does not have enough information to answer a question. Evaluation prompts should be kept apart from training data so that the results are meaningful. A project builder should allow a user to inspect editable source files.
