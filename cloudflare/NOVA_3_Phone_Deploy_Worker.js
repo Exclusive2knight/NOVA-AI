@@ -165,6 +165,12 @@ async function handleCloudMemory(request,env){
    const content=String(body?.text||'').trim();
    const source=body?.source==='note'?'note':'chat';
    if(!content||content.length>4500)return responseJSON({error:'Memory must contain 1–4500 characters'},400);
+   // Sensitive credentials and health/identity records are excluded from automatic memory.
+   if(/\b(?:password|passcode|api[- ]?key|private key|access token|bearer token|recovery code|credit card|bank account|social security|ssn|medical record)\b/i.test(content))
+     return responseJSON({error:'Memory may contain sensitive information. Remove credentials or sensitive records before saving.'},400);
+   // Prevent repeatedly storing identical facts, saving D1 rows and query usage.
+   const prior=await db.prepare('SELECT id FROM nova_memories WHERE body=? LIMIT 1').bind(content).first();
+   if(prior?.id)return responseJSON({saved:false,duplicate:true,id:prior.id});
    const id=crypto.randomUUID(),createdAt=Date.now();
    await db.prepare('INSERT INTO nova_memories(body,source,created_at,id) VALUES(?,?,?,?)')
      .bind(content,source,String(createdAt),id).run();
