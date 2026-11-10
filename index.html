@@ -118,7 +118,7 @@
 <div class="toast" id="toast" role="status"></div>
 <script>(()=>{'use strict';
 const $=id=>document.getElementById(id);const KEY='nova-v3-workspace-1';const DEFAULT_MODEL='pro';const DEFAULT_BACKEND='https://nova-ai.jmoreygreer.workers.dev';
-const introTemplate=$('intro').cloneNode(true);const state=load();state.model=state.model||DEFAULT_MODEL;state.tinyExamples=Array.isArray(state.tinyExamples)?state.tinyExamples:[];state.autoSpeak=!!state.autoSpeak;state.voiceRate=Number(state.voiceRate)||1;state.usage=state.usage&&typeof state.usage==='object'&&state.usage.days?state.usage:{days:{}};state.dailyLimit=Number(state.dailyLimit)||30;state.weeklyLimit=Number(state.weeklyLimit)||150;state.enforceLimit=!!state.enforceLimit;state.responseLength=state.responseLength||'balanced';state.responseTone=state.responseTone||'professional';state.creativity=state.creativity||'balanced';state.theme=state.theme||'dark';state.voiceChoice=state.voiceChoice||'';state.backendUrl=typeof state.backendUrl==='string'&&state.backendUrl.trim()?state.backendUrl:DEFAULT_BACKEND;let pendingFiles=[],modelReady=false,webReady=false,searchMode='wikipedia',busy=false,aborter=null,toastTimer=null,chosenFile=state.chosenFile||null,currentTab='chat',recognition=null,installPrompt=null;
+const introTemplate=$('intro').cloneNode(true);const state=load();state.model=state.model||DEFAULT_MODEL;state.tinyExamples=Array.isArray(state.tinyExamples)?state.tinyExamples:[];state.autoSpeak=!!state.autoSpeak;state.voiceRate=Number(state.voiceRate)||1;state.usage=state.usage&&typeof state.usage==='object'&&state.usage.days?state.usage:{days:{}};state.dailyLimit=Number(state.dailyLimit)||30;state.weeklyLimit=Number(state.weeklyLimit)||150;state.enforceLimit=!!state.enforceLimit;state.responseLength=state.responseLength||'balanced';state.responseTone=state.responseTone||'professional';state.creativity=state.creativity||'balanced';state.theme=state.theme||'dark';state.voiceChoice=state.voiceChoice||'';state.backendUrl=typeof state.backendUrl==='string'&&state.backendUrl.trim()?state.backendUrl:DEFAULT_BACKEND;state.artifacts=Array.isArray(state.artifacts)?state.artifacts.slice(-10):[];state.activeArtifact=state.activeArtifact||null;let pendingFiles=[],modelReady=false,webReady=false,searchMode='wikipedia',busy=false,aborter=null,toastTimer=null,chosenFile=state.chosenFile||null,currentTab='chat',recognition=null,installPrompt=null;
 
 const MODELS=['pro','gemma','glm','qwen','nova-tiny'];
 const MODEL_NAMES={pro:'NOVA Pro',gemma:'Gemma 4',glm:'GLM 4.7 Flash',qwen:'Qwen 3.8','nova-tiny':'NOVA Tiny'};
@@ -183,7 +183,7 @@ function apiEndpoint(path){
  return origin?origin+path:path;
 }
 
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.version===3&&Array.isArray(v.chats)&&v.files&&typeof v.files==='object')return v;}catch(e){}return{version:3,chats:[],active:null,files:{},chosenFile:null,memory:'',passcode:'',search:false,build:false,model:'pro',autoSpeak:false,voiceRate:1,tinyExamples:[],usage:{days:{}},dailyLimit:30,weeklyLimit:150,enforceLimit:false,responseLength:'balanced',responseTone:'professional',creativity:'balanced',theme:'dark',voiceChoice:'',backendUrl:DEFAULT_BACKEND};}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.version===3&&Array.isArray(v.chats)&&v.files&&typeof v.files==='object')return v;}catch(e){}return{version:3,chats:[],active:null,files:{},chosenFile:null,memory:'',passcode:'',search:false,build:false,model:'pro',autoSpeak:false,voiceRate:1,tinyExamples:[],usage:{days:{}},dailyLimit:30,weeklyLimit:150,enforceLimit:false,responseLength:'balanced',responseTone:'professional',creativity:'balanced',theme:'dark',voiceChoice:'',backendUrl:DEFAULT_BACKEND,artifacts:[],activeArtifact:null};}
 function save(){state.chosenFile=chosenFile;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){notice('Browser storage is full. Export your data to keep it safe.')}}
 function id(){return (globalThis.crypto?.randomUUID?.()||String(Date.now())+Math.random().toString(36).slice(2))}
 function notice(txt){const t=$('toast');t.textContent=txt;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('on'),3400)}
@@ -379,6 +379,69 @@ async function sendMessage(){
  }finally{
   busy=false;aborter=null;chat.updated=Date.now();save();renderChats();renderMessages();setButtons();
  }
+}
+
+
+function storeArtifact(files,title){
+ const snapshot={};
+ for(const f of files.slice(0,8))if(validPath(f.path)&&typeof f.content==='string')snapshot[f.path]=f.content.slice(0,100000);
+ if(!Object.keys(snapshot).length)throw Error('No valid artifact code');
+ const artifact={id:id(),title:String(title||'New creation').slice(0,65),files:snapshot,created:Date.now()};
+ state.artifacts.push(artifact);state.artifacts=state.artifacts.slice(-10);
+ Object.assign(state.files,snapshot);state.activeArtifact=artifact.id;save();return artifact;
+}
+function findArtifact(aid){return state.artifacts.find(x=>x.id===aid)||null}
+function artifactDocument(files){
+ const paths=Object.keys(files),main=['index.html','home.html',...paths.filter(x=>x.endsWith('.html'))].find(x=>typeof files[x]==='string');
+ if(main){
+  let src=files[main];
+  src=src.replace(/<link\b[^>]*href=["']([^"']+\.css)["'][^>]*>/gi,(tag,path)=>files[path]?'<style>'+files[path].replace(/<\/style/gi,'<\\/style')+'</style>':tag);
+  src=src.replace(/<script\b[^>]*src=["']([^"']+\.js)["'][^>]*><\/script>/gi,(tag,path)=>files[path]?'<script>'+files[path].replace(/<\/script/gi,'<\\/script')+'<\/script>':tag);
+  return src;
+ }
+ const path=paths[0]||'Untitled';
+ const escape=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ if(path.endsWith('.svg'))return files[path];
+ return '<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:15px/1.6 system-ui;margin:20px"><h2>'+escape(path)+'</h2><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escape(files[path]||'')+'</pre></body></html>';
+}
+function refreshArtifactPreview(){
+ const a=findArtifact(state.activeArtifact);
+ $('artifactFrame').srcdoc=artifactDocument(a?a.files:state.files);
+}
+function setArtifactView(which){
+ const preview=which==='preview';
+ $('artifactCodePane').hidden=preview;$('artifactPreviewPane').hidden=!preview;
+ $('artifactCodeTab').classList.toggle('active',!preview);
+ $('artifactPreviewTab').classList.toggle('active',preview);
+ if(preview)refreshArtifactPreview();
+}
+function openArtifact(aid,mode='preview'){
+ const a=findArtifact(aid);if(!a)return notice('Artifact was not found in local storage');
+ state.activeArtifact=aid;
+ if(mode==='code'){
+  const changed=Object.keys(a.files).filter(p=>state.files[p]!==undefined&&state.files[p]!==a.files[p]);
+  if(changed.length&&!confirm('Open the saved artifact version for editing? This will replace '+changed.length+' current workspace file(s) with the same names.'))return;
+  Object.assign(state.files,a.files);chosenFile=Object.keys(a.files).find(p=>p.endsWith('.html'))||Object.keys(a.files)[0];renderFiles();
+ }
+ setArtifactView(mode);save();tab('files');
+}
+function downloadArtifact(aid){
+ const a=findArtifact(aid);if(!a)return notice('Artifact not found');
+ const url=URL.createObjectURL(zip(Object.entries(a.files)));
+ const link=document.createElement('a');link.href=url;link.download='NOVA_artifact_'+a.id.slice(0,8)+'.zip';document.body.append(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function makeArtifactFromAnswer(m){
+ const backticks=String.fromCharCode(96).repeat(3);
+ const pattern=new RegExp(backticks+'(html|css|javascript|js|typescript|ts|json|svg|markdown|md)\\s*\\n([\\s\\S]*?)'+backticks,'gi');
+ const found=[...String(m.content||'').matchAll(pattern)].slice(0,8);
+ if(!found.length)return notice('This reply has no supported code blocks');
+ const ext={javascript:'js',typescript:'ts',markdown:'md'},files=[],used=new Set();
+ for(const group of found){const lang=group[1].toLowerCase(),type=ext[lang]||lang;
+  let path=type==='html'?'index.html':type==='css'?'styles.css':type==='js'?'script.js':'artifact.'+type;
+  if(used.has(path))path='file-'+(used.size+1)+'.'+type;used.add(path);files.push({path,content:group[2].slice(0,85000)});
+ }
+ const a=storeArtifact(files,'Code from NOVA chat');m.artifactId=a.id;save();renderMessages();openArtifact(a.id,'preview');
 }
 
 function validPath(p){return typeof p==='string'&&p.length>0&&p.length<=130&&!p.startsWith('/')&&!p.startsWith('.')&&!p.includes('..')&&!p.includes('\\')&&/^[a-zA-Z0-9_\-/ .]+\.[a-zA-Z0-9]{1,9}$/.test(p)}
