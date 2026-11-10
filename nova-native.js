@@ -88,7 +88,7 @@ async function train(onStep){
  training=(async()=>{
   const rows=examples(state.teachings),net=state.net;
   if(onStep)onStep({type:'train',label:'Training original NOVA Native neural weights locally'});
-  const start=net.epochs,goal=start>0?Math.min(start+18,100):75;
+  const start=net.epochs,goal=start>0?start+18:75;
   for(let epoch=start;epoch<goal;epoch++){
    // Fixed permutation with reproducible modular stride, changed across epochs.
    for(let k=0;k<rows.length;k++){
