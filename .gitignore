@@ -1,0 +1,14 @@
+# Local training and memory data; keep personal content and weights out of public GitHub
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+__pycache__/
+.venv/
+.env
+.env.*
+!*.example
