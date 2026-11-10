@@ -1008,7 +1008,7 @@ function init(){ensureChat();
  $('novaCreateSpec').addEventListener('click',()=>{
   if(!lastCreatorAsset||lastCreatorAsset.type!=='glb')return;
   const spec={version:1,generator:'NOVA 3D Studio',...lastCreatorAsset.scene};
-  download(lastCreatorAsset.filename.replace(/\\.glb$/i,'')+'_spec.json',JSON.stringify(spec,null,2),'application/json');
+  download(lastCreatorAsset.filename.replace(/[.]glb$/i,'')+'_spec.json',JSON.stringify(spec,null,2),'application/json');
  });
  $('novaCreateDialog').addEventListener('close',()=>creatorAbort?.abort());
  let startPointer=null;
