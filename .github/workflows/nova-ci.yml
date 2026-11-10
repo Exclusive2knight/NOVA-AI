@@ -14,6 +14,8 @@ jobs:
         run: node tests/nova_smoke.cjs
       - name: Train and test NOVA Native entirely offline
         run: node tests/nova_native.cjs
+      - name: Test NOVA Native Online integration and source-only fallback
+        run: node tests/nova_online.cjs
       - name: Test expanded NOVA Native skills and local request policy
         run: node tests/nova_skills.cjs
       - name: Validate NOVA Studio UI, slang and artifacts
