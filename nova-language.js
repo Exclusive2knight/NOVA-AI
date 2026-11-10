@@ -94,7 +94,18 @@ function respond(native,prompt,opts={}){
   if(onStep)onStep({type:'language',label:'Meaning unclear · asking for clarification'});
   return {text:'I am not sure what that means yet. Can you rephrase what you want NOVA to do? I can handle common slang and typos, but I will ask rather than invent an answer.',files:[],skill:'clarify',confidence:0,interpretation:understood.text};
  }
- const hint=hintCategory(understood.text);
+ // Modular skill registry adds many genuinely usable projects without changing
+ // the 17-class neural checkpoint or pretending new categories were trained.
+ const skillKey=global.NOVASkills?.recognize(understood.text);
+ const creationAsked=build||/\b(build|make|create|design|generate|put together|set up|mock up|make me|need a|need an|want a|want an)\b/i.test(understood.text);
+ if(skillKey&&creationAsked){
+  const skillResult=global.NOVASkills.respond(understood.text,{onStep});
+  if(skillResult){
+   if(understood.edits.length)skillResult.interpretation=understood.text;
+   return skillResult;
+  }
+ }
+  const hint=hintCategory(understood.text);
  if(hint&&onStep)onStep({type:'language',label:'Recognized supported task: '+hint});
  let cleaned=understood.text;
  if(hint==='website'&&!/\b(website|webpage|landing page|web app)\b/i.test(cleaned))cleaned='Build a website: '+cleaned;
@@ -102,7 +113,6 @@ function respond(native,prompt,opts={}){
  else if(hint==='todo'&&!/\b(todo|task list|checklist)\b/i.test(cleaned))cleaned='Make a todo app: '+cleaned;
  else if(hint==='notes'&&!/\b(notes app|notepad)\b/i.test(cleaned))cleaned='Make a notes app: '+cleaned;
  else if(hint==='timer'&&!/\btimer\b/i.test(cleaned))cleaned='Make a timer: '+cleaned;
- else if(hint==='quiz'&&!/\bquiz\b/i.test(cleaned))cleaned='Make a quiz: '+cleaned;
  else if(hint==='dashboard'&&!/\bdashboard\b/i.test(cleaned))cleaned='Build a dashboard: '+cleaned;
  else if(hint==='quiz'&&!/\bquiz\b/i.test(cleaned))cleaned='Make a quiz: '+cleaned;
  const asksForCreation=/\b(build|make|create|design|generate|put together|set up|mock up|make me|need a|need an|want a|want an)\b/i.test(cleaned);
