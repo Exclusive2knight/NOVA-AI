@@ -25,8 +25,10 @@ for(const feature of ['function continueAnswer','function appendContinuation','f
 for(const feature of ['runAIWithFallback','NOVA_SITE_ORIGIN','function modelOptions','function parseRequest','reasoning_effort']){
  assert(worker.includes(feature),'Missing Worker feature: '+feature);
 }
+assert(html.includes('<script src="./nova-native-weights.js"></script>'),'Pretrained NOVA Native weights not loaded by website');
 assert(html.includes('<script src="./nova-native.js"></script>'),'Original NOVA Native browser model not loaded by NOVA');
 assert(fs.existsSync(path.join(root,'nova-native.js')),'Original NOVA Native model source missing');
+assert(worker.includes('"/nova-native-weights.js"'),'Cloudflare app bundle must serve pretrained NOVA Native weights');
 assert(worker.includes('"/nova-native.js"'),'Cloudflare app bundle must serve NOVA Native model');
 assert(worker.includes('const EMBEDDED_ASSETS'),'Cloudflare Worker does not include the standalone website bundle');
 assert(worker.includes('function artifactDocument'),'Cloudflare Worker bundle does not include new artifacts UI');
