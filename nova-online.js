@@ -57,7 +57,8 @@ async function workerSearch(query,base,passcode,signal){
  if(!response.ok)throw Error('Worker internet lookup not available ('+response.status+')');
  const data=await response.json();
  if(!Array.isArray(data.sources))throw Error('Unrecognized Worker search response');
- return {provider:data.provider==='web'?'Web search':'Wikipedia',sources:cleanSources(data.sources),mode:'worker'};
+ const engine=['brave','tavily'].includes(data.engine)?data.engine:null;
+ return {provider:data.provider==='web'?('Full web search'+(engine?' · '+(engine==='brave'?'Brave':'Tavily'):'')):'Wikipedia',engine,sources:cleanSources(data.sources),mode:'worker'};
 }
 async function search(text,{backendUrl='',passcode='',signal,onStep}={}){
  const query=queryText(text);
@@ -70,7 +71,7 @@ async function search(text,{backendUrl='',passcode='',signal,onStep}={}){
    return {...found,query};
   }catch(e){
    if(signal?.aborted)throw e;
-   if(onStep)onStep({type:'web',label:'Worker search unavailable; trying public Wikipedia directly'});
+   if(onStep)onStep({type:'web',label:'Whole-web search unavailable or not configured; using Wikipedia references'});
   }
  }
  const direct=await directWikipedia(query,signal);
