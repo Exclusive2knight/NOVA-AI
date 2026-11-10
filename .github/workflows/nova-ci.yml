@@ -21,7 +21,7 @@ jobs:
       - name: Validate original model and memory Python code
         run: python3 -m py_compile training/train_nova.py training/infer_nova.py training/memory_index.py
       - name: Verify NOVA training pipeline syntax
-        run: python3 -m py_compile training/prepare_corpus.py training/synthetic_dialogue.py training/prepare_preferences.py training/constitutional_review.py training/pretrain.py training/train_preferences.py training/test_pipeline.py
+        run: python3 -m py_compile training/prepare_corpus.py training/synthetic_dialogue.py training/prepare_preferences.py training/constitutional_review.py training/pretrain.py training/train_preferences.py training/test_pipeline.py training/train_starter_pack.py
       - name: Test licensing, data splits, synthetic conversations, consent and alignment review
         run: python3 training/test_pipeline.py
       - name: Test local memory indexing
