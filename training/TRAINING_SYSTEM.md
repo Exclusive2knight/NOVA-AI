@@ -1,5 +1,7 @@
 # NOVA Training Lab — four-stage original-model development
 
+> **NEW: Practical LoRA training on an open pretrained language model.** Read [NOVA Open Training Guide](NOVA_OPEN_TRAINING_GUIDE.md) and use the [GPU notebook](NOVA_Open_Training_Colab.ipynb). This is a separate, un-deployed training path; merely committing the scripts does **not** train Qwen or alter the live Cloudflare AI. The original NOVA Core tiny model has received a separate measured CPU continuation, with still-incoherent text.
+
 NOVA has a real **original transformer training prototype** and a separately deployed **NOVA Native** intent classifier. The tools in this directory are the next stage of experimentation; they are **not** a trained Claude-equivalent language model, and their checkpoints are **not** yet connected to the production chat website.
 
 ## 1. Licensed-text pretraining
