@@ -1,5 +1,7 @@
 # NOVA AI · Mobile AI Workshop
 
+> **New owner-controlled capabilities:** Cloud-memory correction and JSON export, optional Cloudflare image analysis, offline HTML/CSS/JS checks, and manual NOVA Pro answer review. [Read the setup and limits](NOVA_CAPABILITIES_RELEASE_2026-11-10.md). Deployment and owner configuration still required for Cloudflare features.
+
 > **November 10, 2026 upgrade:** NOVA now has an explicit **✦ Pro** shortcut for hosted conversational AI, selective opt-in off-device Cloudflare D1 memory, on-demand Tavily extraction for user-requested public webpages, and sandboxed JavaScript preview error reporting with a user-reviewed **✦ Fix errors** workflow. [Read the complete upgrade and setup guide](NOVA_UPGRADE_GUIDE.md). These GitHub changes need Cloudflare deployment and credentials/bindings for hosted features; the original NOVA neural model has not become frontier-class.
 
 NOVA is an experimental AI workshop built for chat, creating editable code files, simple website previews, local project exports, and optional reference search. It is **not** Claude or a model of equivalent intelligence. Live language-model responses use Cloudflare Workers AI after deployment; there is no secret AI service or fake chat backend in the offline version.
