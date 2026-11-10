@@ -359,7 +359,7 @@ function memoryCandidate(message){
  if(q.length<16||q.length>1600)return '';
  if(/\b(?:password|passcode|api[- ]?key|private key|access token|bearer token|recovery code|credit card|bank account|social security|ssn|phone number|street address|diagnosis|prescription|medical record)\b/i.test(q))return '';
  if(/^(?:forget|delete|erase|remove)\b/i.test(q))return '';
- if(/^(?:remember (?:that|this)|save (?:this|that) (?:as|to) memory|note (?:that|this)|i (?:prefer|like|want|need|chose|decided|use|made|built|created|am building|am working on)|we (?:decided|chose|are building|are working on)|my (?:project|game|app|model|car|design|goal|plan|preference)|for my (?:project|game|app|model|car)|the (?:project|game|app|model) (?:is|uses|has|will)|please (?:keep|avoid|use|remember))\b/i.test(q))return q.slice(0,1400);
+ if(/^(?:remember (?:that|this)|save (?:this|that) (?:as|to) memory|note (?:that|this)|i (?:prefer|like|want|need|chose|decided|use|made|built|created|am building|am working on)|we (?:decided|chose|are building|are working on)|my (?:driving |roblox |mobile |nova )?(?:project|game|app|model|car|design|goal|plan|preference)|for my (?:project|game|app|model|car)|the (?:project|game|app|model) (?:is|uses|has|will)|please (?:keep|avoid|use|remember))\b/i.test(q))return q.slice(0,1400);
  return '';
 }
 async function cloudMemoryStoreExchange(prompt,reply){
