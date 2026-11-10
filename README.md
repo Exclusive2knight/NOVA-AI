@@ -74,7 +74,7 @@ User data is stored in that browser by default. Speech input may involve the bro
 
 **Public NOVA website:** https://exclusive2knight.github.io/NOVA-AI/
 
-**Connect the AI to this website:** Follow [CONNECT_CLOUDFLARE.md](CONNECT_CLOUDFLARE.md). Deploy the Worker from the `cloudflare` subfolder of this repository via Cloudflare's GitHub import, set the `AI` binding and `NOVA_PASSCODE` secret on Cloudflare, then open NOVA **Settings → Connection & installation** and paste your own `https://…workers.dev` address. Select **Test AI server connection**, enter your passcode locally, and save.
+**Connect the AI to this website:** Follow [CONNECT_CLOUDFLARE.md](CONNECT_CLOUDFLARE.md). Deploy the Worker from the `cloudflare` subfolder of this repository via Cloudflare's GitHub import, set the `AI` binding and `NOVA_PASSCODE` secret on Cloudflare, then open NOVA **Settings → Connection & installation** and confirm the prefilled `https://nova-ai.jmoreygreer.workers.dev` address. Select **Test AI server connection**, enter your passcode locally, and save.
 
 GitHub Pages hosts the interface. Chat and Build using hosted AI models will only function after the Cloudflare Worker is deployed. The Worker explicitly allows API requests from `https://exclusive2knight.github.io` but not arbitrary origins. **Never commit passcodes, passwords, or API keys to GitHub.**
 
