@@ -40,7 +40,7 @@ class StrongEightBTests(unittest.TestCase):
             "load_in_4bit=True", 'bnb_4bit_quant_type="nf4"', "LoraConfig(",
             "completion_only_loss=True", "load_best_model_at_end=True",
             "push_to_hub=False", 'report_to="none"',
-            'train.jsonl', 'valid.jsonl', "No CUDA",
+            'train.jsonl', 'valid.jsonl', "NVIDIA GPU",
             "test_split_used", "trainer.save_model",
         ]:
             self.assertIn(needle, source)
