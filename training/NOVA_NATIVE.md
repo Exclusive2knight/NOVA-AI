@@ -18,6 +18,7 @@ Its weights have now been **trained and bundled into the project**, so the app n
 
 - **`nova-native.js`** contains original code for training, classifying requests and invoking local skills.
 - **`nova-native-weights.js`** contains the original trained weights compressed as symmetric, signed 16-bit values for browser loading. No external APIs or paid models are required.
+- **`training/rebuild_native_weights.cjs`** is a reproducible Node.js script that retrains the checkpoint from the original source, writes compressed weights, and prints both evaluation results. Run `node training/rebuild_native_weights.cjs` on a computer with Node.js 20 or later to rebuild the bundle.
 - Training used roughly a thousand examples including original examples, newly authored phrases and simple training-time prompt variations. The original model uses hashed word/bigram/prefix/suffix features and gradient updates.
 - Custom examples and additional training updates are saved only in the browser's local storage. Existing Native 1.0 custom intent examples are migrated where available.
 - Model size and accuracy measure **intent routing**, not general language reasoning.
