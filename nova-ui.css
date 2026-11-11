@@ -215,3 +215,209 @@ dialog::backdrop{background:rgba(5,10,18,.65);backdrop-filter:blur(5px)}
 .nova-chat-image{width:min(100%,550px);max-height:500px;object-fit:contain;border-radius:11px;margin-top:12px;}
 .nova-created-file{margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--purple);color:var(--ink);border:1px solid var(--line);font-weight:650;cursor:pointer;}
 @media(max-width:520px){.create-quick{padding:0 3px}.create-quick button{padding:6px 10px;font-size:11px}.nova-create-dialog .dialog-content{padding:11px}.nova-create-result canvas{height:245px}}
+
+
+/* NOVA 2026 Appearance Studio — original glass-and-aurora interface.
+   The visual system is CSS-only and never displays invented AI progress. */
+:root{
+ --nova-glow:rgba(125,165,250,.13);
+ --nova-glow-strong:rgba(130,174,255,.25);
+ --nova-motion-ease:cubic-bezier(.16,1,.3,1);
+ --nova-msg-size:14.25px;
+}
+:root[data-theme="light"]{
+ --nova-glow:rgba(60,100,185,.075);
+ --nova-glow-strong:rgba(70,108,191,.17);
+}
+:root[data-accent="violet"]{
+ --accent:#d2b5ff;--coral:#d2b5ff;--nova-primary:#ebddff;
+ --nova-primary-ink:#27173e;--nova-glow:rgba(154,90,242,.15);
+ --nova-glow-strong:rgba(170,112,255,.24);
+}
+:root[data-accent="mint"]{
+ --accent:#7fe2c2;--coral:#7fe2c2;--nova-primary:#c7fae9;
+ --nova-primary-ink:#123a34;--nova-glow:rgba(42,189,139,.13);
+ --nova-glow-strong:rgba(89,235,184,.24);
+}
+:root[data-accent="sunset"]{
+ --accent:#ffc39f;--coral:#ffc39f;--nova-primary:#ffe0c5;
+ --nova-primary-ink:#46281c;--nova-glow:rgba(236,126,95,.13);
+ --nova-glow-strong:rgba(255,174,129,.26);
+}
+:root[data-theme="light"][data-accent="violet"]{
+ --accent:#7951ac;--coral:#7951ac;--nova-primary:#59308b;
+ --nova-primary-ink:#fff;--nova-glow:rgba(134,83,202,.07);
+}
+:root[data-theme="light"][data-accent="mint"]{
+ --accent:#13775d;--coral:#13775d;--nova-primary:#176a51;
+ --nova-primary-ink:#fff;--nova-glow:rgba(31,144,105,.07);
+}
+:root[data-theme="light"][data-accent="sunset"]{
+ --accent:#a54c2e;--coral:#a54c2e;--nova-primary:#a54c2e;
+ --nova-primary-ink:#fff;--nova-glow:rgba(174,87,54,.07);
+}
+:root[data-chat-size="small"]{--nova-msg-size:13px}
+:root[data-chat-size="normal"]{--nova-msg-size:14.25px}
+:root[data-chat-size="large"]{--nova-msg-size:17px}
+
+/* Ambient backdrop: fixed layers do not move while the user scrolls. */
+.right{position:relative;isolation:isolate}
+.chat-section{
+ position:relative;
+ background:
+  radial-gradient(ellipse 660px 370px at 90% 1%,var(--nova-glow),transparent 77%),
+  radial-gradient(ellipse 410px 320px at 3% 68%,var(--nova-glow),transparent 79%),
+  var(--paper);
+}
+.messages{position:relative;scroll-behavior:smooth}
+.topbar{
+ position:relative;
+ box-shadow:0 1px 0 rgba(255,255,255,.025);
+}
+.topbar-title strong{letter-spacing:-.028em}
+.topbar .model-choice,.usage-pill,.icon-button{transition:transform .25s var(--nova-motion-ease),background .2s ease,border-color .2s ease,box-shadow .25s ease}
+.topbar .model-choice:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--nova-glow)}
+#smartChat{
+ background:linear-gradient(125deg,var(--nova-primary),var(--accent));
+ color:var(--nova-primary-ink);border:0;border-radius:12px;min-height:40px;
+ box-shadow:0 3px 14px var(--nova-glow-strong);font-weight:780;letter-spacing:.01em;
+}
+#smartChat:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--nova-glow-strong)}
+#smartChat:active{transform:scale(.97)}
+.topbar-badge:before{animation:nova-status-breathe 3.6s ease-in-out infinite}
+@keyframes nova-status-breathe{0%,100%{box-shadow:0 0 0 3px var(--nova-glow)}50%{box-shadow:0 0 0 6px var(--nova-glow-strong)}}
+:root[data-busy="true"] .topbar-badge:before{animation:nova-status-breathe 1.3s ease-in-out infinite}
+
+.intro-icon{position:relative;overflow:hidden;box-shadow:0 12px 38px var(--nova-glow-strong),inset 0 1px rgba(255,255,255,.09)}
+.intro-icon::after{content:"";position:absolute;inset:-60%;background:linear-gradient(115deg,transparent 38%,var(--nova-glow-strong) 48%,transparent 59%);transform:translateX(-80%);animation:nova-intro-sheen 6s ease-in-out infinite;pointer-events:none}
+@keyframes nova-intro-sheen{0%,65%{transform:translateX(-90%)}88%,100%{transform:translateX(90%)}}
+.intro .eyebrow{font-weight:800}
+.intro h1{letter-spacing:-.06em}
+.intro h1 em{background:linear-gradient(120deg,var(--accent),var(--nova-primary),var(--accent));color:transparent;-webkit-background-clip:text;background-clip:text}
+.suggestions button{position:relative;overflow:hidden;transition:transform .3s var(--nova-motion-ease),box-shadow .3s ease,border-color .2s ease}
+.suggestions button:hover{transform:translateY(-3px);box-shadow:0 12px 28px var(--nova-glow)}
+.suggestions button:active{transform:scale(.985)}
+.suggestions button:nth-child(1){animation:nova-card-rise .4s .04s both}
+.suggestions button:nth-child(2){animation:nova-card-rise .4s .10s both}
+.suggestions button:nth-child(3){animation:nova-card-rise .4s .16s both}
+.suggestions button:nth-child(4){animation:nova-card-rise .4s .22s both}
+@keyframes nova-card-rise{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.message.fresh{animation:nova-message-entry .36s var(--nova-motion-ease) both}
+@keyframes nova-message-entry{from{opacity:0;transform:translateY(12px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+.message.assistant .bubble{font-size:var(--nova-msg-size);line-height:1.83}
+.message.user .bubble{font-size:var(--nova-msg-size);box-shadow:0 4px 20px var(--nova-glow);border-color:var(--nova-glow-strong)}
+.message.assistant .avatar{box-shadow:0 4px 16px var(--nova-glow-strong);border:1px solid var(--nova-glow-strong)}
+.message.is-processing .avatar{animation:nova-avatar-breathe 2.1s ease-in-out infinite}
+@keyframes nova-avatar-breathe{0%,100%{box-shadow:0 0 0 0 var(--nova-glow)}50%{box-shadow:0 0 0 8px var(--nova-glow-strong)}}
+.message .msg-actions button{transition:background .2s ease,transform .2s var(--nova-motion-ease)}
+.message .msg-actions button:active{transform:scale(.96)}
+.message .source-links a:hover{box-shadow:0 3px 12px var(--nova-glow);border-color:var(--accent)}
+
+:root[data-bubble="outline"] .message.user .bubble{background:transparent;border:1.5px solid var(--accent);box-shadow:none}
+:root[data-bubble="outline"] .message.assistant .bubble{background:transparent}
+:root[data-bubble="flat"] .message.user .bubble{background:var(--nova-soft);border:0;border-radius:13px;box-shadow:none}
+:root[data-bubble="flat"] .message.assistant .bubble{background:transparent}
+:root[data-bubble="flat"] .avatar{border-radius:50%;box-shadow:none}
+
+.composer-shell{position:relative;z-index:3}
+.composer{
+ position:relative;
+ background:color-mix(in srgb,var(--panel) 95%,transparent);
+ border:1px solid color-mix(in srgb,var(--accent) 16%,var(--line));
+ box-shadow:0 8px 25px #00000016,0 0 0 1px #ffffff03;
+ transition:transform .25s var(--nova-motion-ease),box-shadow .28s ease,border-color .2s ease;
+}
+.composer:focus-within{box-shadow:0 0 0 3px var(--nova-glow-strong),0 15px 36px #00000024;transform:translateY(-1px)}
+.composer textarea{font-size:16px}
+.composer .compose-tools button[aria-pressed="true"]{border-color:var(--nova-glow-strong);box-shadow:0 0 0 2px var(--nova-glow)}
+.send-button{
+ border-radius:14px;
+ background:linear-gradient(135deg,var(--nova-primary),var(--accent));
+ box-shadow:0 5px 18px var(--nova-glow-strong);
+ transition:transform .2s var(--nova-motion-ease),box-shadow .2s ease,filter .2s ease;
+}
+.send-button:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 24px var(--nova-glow-strong)}
+:root[data-busy="true"] .send-button{background:var(--accent);color:var(--paper)}
+.create-quick button{transition:background .2s,transform .25s var(--nova-motion-ease),border-color .2s,box-shadow .2s}
+.create-quick button:hover{border-color:var(--accent);background:var(--nova-soft);transform:translateY(-2px);box-shadow:0 7px 22px var(--nova-glow)}
+.create-quick button:active{transform:scale(.97)}
+
+/* Real-work indicator is shown only while NOVA actually performs a request. */
+.nova-working{
+ display:none;
+ max-width:840px;
+ margin:0 auto 8px;
+ align-items:center;gap:11px;
+ border:1px solid var(--line);
+ border-radius:14px;
+ padding:9px 14px;
+ background:var(--panel);
+ color:var(--muted);
+ box-shadow:0 5px 20px var(--nova-glow);
+ font-size:12px;font-weight:630;
+}
+:root[data-busy="true"] .nova-working{display:flex;animation:nova-working-appear .3s var(--nova-motion-ease) both}
+@keyframes nova-working-appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.nova-working-orb{
+ flex-shrink:0;width:19px;height:19px;border-radius:50%;
+ background:radial-gradient(circle at 28% 25%,#fff 0%,var(--nova-primary) 28%,var(--accent) 80%);
+ box-shadow:0 0 0 3px var(--nova-glow),0 0 15px var(--nova-glow-strong);
+ animation:nova-orb 2.2s ease-in-out infinite;
+}
+@keyframes nova-orb{0%,100%{transform:scale(.94);opacity:.75}50%{transform:scale(1.14);opacity:1}}
+.nova-working-dots{margin-left:auto;display:inline-flex;gap:4px;align-items:center}
+.nova-working-dots i{display:block;width:5px;height:5px;border-radius:50%;background:var(--accent);animation:nova-dot 1.3s ease-in-out infinite}
+.nova-working-dots i:nth-child(2){animation-delay:.15s}
+.nova-working-dots i:nth-child(3){animation-delay:.3s}
+@keyframes nova-dot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}
+
+/* Overlay panels and saved personalization. */
+dialog[open]{animation:nova-dialog-in .35s var(--nova-motion-ease) both}
+@keyframes nova-dialog-in{from{opacity:0;transform:translateY(17px) scale(.984)}to{opacity:1;transform:translateY(0) scale(1)}}
+.settings-section{transition:border-color .2s ease,box-shadow .25s ease}
+.settings-section:focus-within{border-color:var(--nova-glow-strong);box-shadow:0 0 0 2px var(--nova-glow)}
+.settings-section h3{letter-spacing:-.02em}
+.setting-check{accent-color:var(--accent)}
+.settings-select{min-height:43px}
+:root[data-glass="on"] .topbar,:root[data-glass="on"] .mobile-tabs,:root[data-glass="on"] .composer{
+ background:color-mix(in srgb,var(--panel) 88%,transparent);
+ -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+}
+:root[data-glass="on"] .drawer{background:color-mix(in srgb,var(--side) 93%,transparent)}
+:root[data-glass="off"] .topbar,:root[data-glass="off"] .mobile-tabs,:root[data-glass="off"] .composer{
+ -webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel);
+}
+:root[data-motion="subtle"] .message.fresh{animation-duration:.16s}
+:root[data-motion="subtle"] .nova-working-orb,:root[data-motion="subtle"] .nova-working-dots i{animation-duration:3s}
+:root[data-motion="subtle"] .intro-icon::after{animation:none}
+:root[data-motion="off"] .messages{scroll-behavior:auto}
+@media(prefers-reduced-motion:reduce){
+ .messages{scroll-behavior:auto}
+ .message.fresh,.nova-working,.nova-working-orb,.nova-working-dots i,
+ .suggestions button,.intro-icon::after,dialog[open],.message.is-processing .avatar{
+  animation:none!important;
+ }
+}
+/* Mobile navigation keeps Settings discoverable and moves less-critical buttons
+   into the existing drawer to avoid squishing the text input. */
+@media(max-width:900px){
+ .drawer{transition:transform .35s var(--nova-motion-ease),box-shadow .3s ease}
+ .topbar{z-index:4}
+ .composer-shell{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+ .messages{scroll-padding-bottom:18px}
+}
+@media(max-width:520px){
+ .topbar{gap:6px;padding:0 9px}
+ .topbar .model-choice{min-width:0;max-width:46vw;flex:1}
+ #topSettings{display:grid;width:40px;height:40px}
+ #topNew,#usageOpen{display:none}
+ #smartChat{min-height:37px;padding:6px 8px;font-size:11px}
+ .message.assistant .bubble{font-size:var(--nova-msg-size)}
+ .message.user .bubble{font-size:var(--nova-msg-size)}
+ .messages{padding:17px 13px 9px}
+ .composer{border-radius:22px}
+ .nova-working{font-size:11px;padding:9px 11px;border-radius:12px}
+ .create-quick{gap:8px}
+ .create-quick button{flex:1;min-width:0;white-space:nowrap}
+ .settings-section{border-radius:14px;padding:13px}
+}
