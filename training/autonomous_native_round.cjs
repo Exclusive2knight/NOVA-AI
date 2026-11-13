@@ -32,23 +32,25 @@ function create(){
 }
 function measure(model){
  return suites.map(s=>{
-  let correct=0,penalty=0,confidentErrors=0;
+  let correct=0,penalty=0,confidentErrors=0;const correctMask=[];
   for(const item of s.items){
    const prediction=model.classify(item.prompt);
    const confidence=Number(prediction.confidence);
    if(!Number.isFinite(confidence)||confidence<0||confidence>1)throw Error('Invalid confidence');
    const match=prediction.intent===item.intent;
+   correctMask.push(match);
    if(match)correct++;else if(confidence>.85)confidentErrors++;
    penalty+=Math.pow(match?1-confidence:1+confidence,2);
   }
   return {suite:s.name,total:s.items.length,correct,accuracy:Number((correct/s.items.length).toFixed(4)),
-   meanPenalty:Number((penalty/s.items.length).toFixed(6)),confidentErrors};
+   meanPenalty:Number((penalty/s.items.length).toFixed(6)),confidentErrors,correctMask};
  });
 }
 function gate(before,after){
  const findings=[];
  for(let i=0;i<before.length;i++){
   if(after[i].correct<before[i].correct)findings.push(after[i].suite+': accuracy regressed');
+  if(Array.isArray(before[i].correctMask)&&before[i].correctMask.some((wasCorrect,k)=>wasCorrect&&!after[i].correctMask?.[k]))findings.push(after[i].suite+': previously correct example forgotten');
   if(after[i].meanPenalty>before[i].meanPenalty+.003)findings.push(after[i].suite+': confidence-calibrated error regressed');
   if(after[i].confidentErrors>before[i].confidentErrors)findings.push(after[i].suite+': confidently wrong answers increased');
  }
