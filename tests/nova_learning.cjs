@@ -29,7 +29,10 @@ const negative=[
  'No way that is amazing!',
  'Actually my password is 123456abcdef',
  'Actually, I have a diagnosis to tell you about',
- 'Actually, here is my street address'
+ 'Actually, here is my street address',
+ 'Actually, email me at test@example.com',
+ 'Actually call 555-888-5555',
+ 'Actually use account 123456789012'
 ];
 for(const input of negative)assert.equal(learn.correction(input,topic),'','Non-correction/sensitive text saved: '+input);
 assert.equal(learn.correction(positive[0],'What is my password and bank account number?'),'');
@@ -37,6 +40,7 @@ assert.equal(learn.correction('no',topic),'');
 assert.equal(learn.correction(positive[0],''),'');
 assert(page.includes('id="turboLearningToggle"'),'Explicit Turbo Learning opt-in is required');
 assert(page.includes('state.turboLearningOn'),'Turbo Learning setting must be persistent');
+assert(page.includes('const previous=userMessages.length>1?'),'Short-followup cloud recall must use prior request');
 assert(page.includes('NOVAQuickLearn?.correction'),'Correction learner not connected to memory');
 assert(page.includes('cloudMemoryStoreExchange(promptText,answer.content)'),'Completed responses should learn and store');
 console.log('NOVA Turbo Learning: corrections detected, private data rejected, explicit opt-in and chat wiring PASSED');
