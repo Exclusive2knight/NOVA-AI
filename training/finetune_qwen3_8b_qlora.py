@@ -111,8 +111,11 @@ def run(args):
     if not math.isfinite(before) or not math.isfinite(after):
         raise ValueError("Training produced invalid validation loss")
     adapter_dir = output / "adapter"
-    trainer.save_model(str(adapter_dir))
-    trainer.processing_class.save_pretrained(str(adapter_dir))
+    improved = after < before
+    # Never publish an adapter whose held-out validation loss worsened.
+    if improved:
+        trainer.save_model(str(adapter_dir))
+        trainer.processing_class.save_pretrained(str(adapter_dir))
     metrics = {
         "base_model": MODEL_ID,
         "license": "Apache-2.0",
@@ -123,7 +126,8 @@ def run(args):
         "steps_requested": args.max_steps,
         "validation_loss_before": before,
         "validation_loss_after": after,
-        "validation_improved": after < before,
+        "validation_improved": improved,
+        "adapter_saved": improved,
         "deployment": "not deployed; adapter requires compatible self-hosted inference",
         "important": "Small demo domain validation is not a general intelligence benchmark",
     }

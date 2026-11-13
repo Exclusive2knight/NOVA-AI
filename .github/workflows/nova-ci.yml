@@ -42,6 +42,10 @@ jobs:
         run: node tests/nova_behavior_eval.cjs
       - name: Verify consent-based NOVA Turbo Learning and correction privacy
         run: node tests/nova_learning.cjs
+      - name: Validate autonomous neural weight checkpoint selection
+        run: node tests/nova_auto_learning.cjs
+      - name: Exercise one real continuation without publishing weights
+        run: node training/autonomous_native_round.cjs --report /tmp/nova-ci-learning-report.json
       - name: Test offline project linting and repair integration
         run: node tests/nova_project_check.cjs
       - name: Test secure sandbox preview errors and user-approved repair
