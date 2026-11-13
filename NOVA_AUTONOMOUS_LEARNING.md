@@ -25,6 +25,12 @@ The learning cycle is bounded (18 epochs per run, 12-minute maximum workflow tim
 
 **Important deployment note:** A successful GitHub Actions bot commit to `main` might not trigger other push-driven workflows (GitHub normally suppresses recursive workflow triggers for `GITHUB_TOKEN`). GitHub Pages and Cloudflare deployment settings must be checked separately. The repository checkpoint can improve even when the live site/Worker has not yet updated. The single-file Worker is synchronized in the repo, but this workflow does not independently deploy it.
 
+## Optional stronger model — GPU AutoLab
+
+The repository also includes `.github/workflows/nova-strong-autolearn.yml` for real **Qwen3-8B QLoRA** adaptation (not a new model trained from scratch). It is **disabled by default**: you must explicitly set the repository variable `NOVA_GPU_AUTOLEARN=true` **and** connect a trusted, owner-managed NVIDIA GPU runner tagged `self-hosted, linux, x64, nova-gpu`. That is a separate machine, not your phone; power, bandwidth and runner costs are your responsibility.
+
+When enabled, the GPU workflow can run daily or by manual dispatch. It builds only the explicitly rights-approved `training/nova_sft_examples.jsonl`, checks validation loss, and saves an adapter **only if validation improves**. Run artifacts expire according to GitHub's configured retention. It **does not** automatically deploy the adapter or replace hosted AI on Cloudflare. For that, you need a compatible self-hosted inference endpoint and model deployment tests. The starter dataset is too small to expect major general reasoning improvements.
+
 ## Limitations
 
 - Repeated training on the same small curriculum can plateau or overfit. AutoLab deliberately **rejects** non-improving candidates rather than running forever or fabricating results. Reusing fixed held-out tests for promotion can gradually overfit the tests; you should add fresh, authorized independent evaluation sets over time.
