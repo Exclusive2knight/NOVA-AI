@@ -10,12 +10,12 @@ Each cycle:
 
 1. Loads the current **published** int16-trained native neural checkpoint and the existing original, project-authored labeled intent examples in `nova-native.js`.
 2. Measures two independent, human-authored evaluation suites **before** further training.
-3. Performs **18 additional supervised neural training epochs** on the already-approved labeled examples. There is no scrape, hidden user-chat ingestion, web activity, unsupervised truth invention or provider API cost.
+3. Explores **up to four separate 18-epoch supervised neural continuation strategies** (different bounded learning rates and example orders) on the already-approved labeled examples; all start from the same previous published checkpoint. There is no scrape, hidden user-chat ingestion, web activity, unsupervised truth invention or provider API cost.
 4. Re-evaluates the candidate on both suites. Rejects it if any previously correct example becomes wrong, any suite loses accuracy, confident wrong predictions increase, calibrated error worsens significantly, or overall score fails to improve.
 5. If accepted, compresses the candidate, reloads the quantized weights into a fresh neural network, checks the same gate **again**, and replaces the checkpoint.
 6. Updates the single-file Cloudflare Worker asset bundle, runs checks, writes a JSON audit report as a GitHub Actions artifact, and **only then** commits improved weights to `main`. Rejected rounds preserve the previous model. All changes remain visible in Git history.
 
-The learning cycle is bounded (18 epochs per run, 12-minute maximum workflow time) and uses built-in Node.js, so no GPU, API keys or paid model services are required. Running it does consume GitHub Actions execution/storage quota under the repo's current plan and policies. Check your Actions settings for usage and limits.
+The learning cycle is bounded (at most four candidate rounds × 18 epochs, 12-minute maximum workflow time) and uses built-in Node.js, so no GPU, API keys or paid model services are required. Running it does consume GitHub Actions execution/storage quota under the repo's current plan and policies. Check your Actions settings for usage and limits.
 
 ## What it changes
 
