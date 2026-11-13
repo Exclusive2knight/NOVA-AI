@@ -1,0 +1,64 @@
+# Original NOVA Native automatically continues training with bounded CPU compute.
+# Only verified checkpoints are committed. Hosted Qwen/GPT-OSS weights are NOT trained here.
+name: NOVA Autonomous Native Learning
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-autonomous-native-main
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    if: github.repository == 'Exclusive2knight/NOVA-AI' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Perform one 18-epoch actual neural training continuation
+        run: node training/autonomous_native_round.cjs --apply --report native-learning-report.json
+      - name: Include any promoted weights in standalone Cloudflare Worker
+        run: node training/sync_embedded_weights.cjs
+      - name: Re-evaluate website behavior and held-out neural tasks
+        run: |
+          node tests/nova_auto_learning.cjs
+          node tests/nova_native_checkpoint.cjs
+          node tests/nova_cloud_memory.cjs
+          node tests/nova_smoke.cjs
+          node tests/nova_deploy.cjs
+      - name: Preserve a transparent report of the candidate and rejection reasons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-native-learning-${{ github.run_id }}
+          path: native-learning-report.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Commit only if verified weights improved both holdout gates
+        shell: bash
+        run: |
+          if git diff --quiet -- nova-native-weights.js; then
+            echo 'No promotion: the previous checkpoint remains unchanged.'
+            exit 0
+          fi
+          git diff --exit-code -- cloudflare/NOVA_3_Phone_Deploy_Worker.js >/dev/null && {
+            echo 'Error: standalone Worker assets were not synchronized.'
+            exit 1
+          }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add nova-native-weights.js cloudflare/NOVA_3_Phone_Deploy_Worker.js
+          git commit -m 'chore: promote verified NOVA Native autonomous learning checkpoint'
+          git push origin HEAD:main
