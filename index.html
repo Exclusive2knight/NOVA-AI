@@ -431,7 +431,7 @@ async function cloudMemoryStoreExchange(prompt,reply){
   const fact=learnedCorrection||memoryCandidate(prompt);
   if(!fact)return;
   const note=learnedCorrection?learnedCorrection:'User stated: '+fact;
-  try{await cloudMemoryCall('save',{source:'chat',text:note})}
+  try{const stored=await cloudMemoryCall('save',{source:'chat',text:note});if(learnedCorrection&&stored.saved)notice('Turbo Learning saved your correction to cloud memory')}
   catch(error){console.warn('NOVA cloud memory save unavailable')}
  }
  async function chatRequest(messages,attachments,onProgress,opts={}){
