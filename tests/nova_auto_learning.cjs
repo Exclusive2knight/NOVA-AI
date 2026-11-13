@@ -17,6 +17,9 @@ const bad=[{suite:'first',total:20,correct:19,meanPenalty:.20,confidentErrors:0}
 assert(gate(first,good).promote,'New checkpoint should pass when metrics clearly improve');
 assert(!gate(first,bad).promote,'New checkpoint must not promote after accuracy regression');
 assert(!gate(first,first).promote,'No change is not an improvement');
+const forgettingBefore=[{suite:'forget',total:3,correct:2,meanPenalty:.5,confidentErrors:0,correctMask:[true,true,false]}];
+const forgettingAfter=[{suite:'forget',total:3,correct:2,meanPenalty:.3,confidentErrors:0,correctMask:[true,false,true]}];
+assert(!gate(forgettingBefore,forgettingAfter).promote,'Previously correct example must not be forgotten even when average score improves');
 const encoded=compress([0,1,-1,.25]);
 assert.equal(encoded.count,4);
 assert.equal(Buffer.from(encoded.data,'base64').length,8);
