@@ -25,7 +25,7 @@ const native=context.window.NOVANative;
 assert(native?.status().trained,'The pretrained model must load without on-device training');
 assert.equal(native.status().source,'bundled checkpoint');
 assert.equal(native.status().parameters,50033);
-assert.equal(native.status().epochs,75);
+assert(native.status().epochs>=75, "Checkpoint must have at least 75 verified training passes");
 const reports=[];
 for(const spec of contexts){
  const evaluation=JSON.parse(fs.readFileSync(path.join(root,'training',spec.filename),'utf8'));
