@@ -5,7 +5,7 @@
 (function(root){
  'use strict';
  const sensitive=/\b(?:password|passcode|api[- _]?key|private key|access token|bearer token|recovery code|credit card|bank account|social security|ssn|phone number|street address|diagnosis|prescription|medical record|date of birth|sexual orientation|religion|political party)\b/i;
- const personal=/[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|(?:\\+?1[-. ]?)?\\(?\\d{3}\\)?[-. ]?\\d{3}[-. ]?\\d{4}|\\b\\d{9,}\\b/i;
+ const personal=/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]?\d{3}[-. ]?\d{4}|\b\d{9,}\b/i;
  const command=/\b(?:forget|delete|erase|remove)\s+(?:my|your|the|this|that|all)?\s*(?:memory|memories|history|data|information|conversation)\b/i;
  function clean(text){return String(text||'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim()}
  function isCorrection(text){
