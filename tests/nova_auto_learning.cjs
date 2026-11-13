@@ -23,7 +23,7 @@ assert(!gate(forgettingBefore,forgettingAfter).promote,'Previously correct examp
 const encoded=compress([0,1,-1,.25]);
 assert.equal(encoded.count,4);
 assert.equal(Buffer.from(encoded.data,'base64').length,8);
-for(const token of ['native_holdout_v2.json','native_holdout_extra.json','await model.train()',
+for(const token of ['native_holdout_v2.json','native_holdout_extra.json','await model.train(null,strategy)',
  'verifiedQuantized','quantizedGate','getItem','heldoutWarning','userChatsCollected:false',
  'window.NOVA_NATIVE_BUNDLE','startedEpochs']){
  assert(code.includes(token),'Missing gate or safety feature '+token);
