@@ -391,7 +391,14 @@ async function cloudMemoryCall(action,params={}){
 async function cloudMemoryRecall(query){
  if(!state.cloudMemoryOn||!state.passcode)return '';
  try{
-  const results=await cloudMemoryCall('search',{query:String(query||'').slice(0,240)});
+  let lookup=String(query||'');
+  // Retrieve the previous topic when the latest request is only a short follow-up.
+  if(lookup.length<48&&/^(?:no[,!: ]|nah[,!: ]|actually|continue|do it|redo|again|try again|fix it|make it|same|more|what about)/i.test(lookup)){
+   const userMessages=ensureChat().messages.filter(m=>m.role==='user'&&typeof m.content==='string');
+   const previous=userMessages.length>1?userMessages[userMessages.length-2].content:'';
+   if(previous)lookup=previous.slice(0,180)+' '+lookup;
+  }
+  const results=await cloudMemoryCall('search',{query:lookup.slice(0,240)});
   const lines=(results.matches||[]).slice(0,5).map((m,i)=>
    '['+(i+1)+'] '+String(m.text||'').slice(0,750)
   );
