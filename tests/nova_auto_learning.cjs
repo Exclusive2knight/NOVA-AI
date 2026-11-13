@@ -34,4 +34,12 @@ for(const token of ['schedule:','workflow_dispatch:','concurrency:','timeout-min
  assert(workflow.includes(token),'Missing scheduled training guard: '+token);
 }
 assert(!/curl|wget|openai\.com|anthropic\.com/.test(code),'Training must not scrape or call model APIs');
+
+const gpuWorkflow=fs.readFileSync(path.join(root,'.github/workflows/nova-strong-autolearn.yml'),'utf8');
+const strongTrainer=fs.readFileSync(path.join(root,'training/finetune_qwen3_8b_qlora.py'),'utf8');
+assert(gpuWorkflow.includes("vars.NOVA_GPU_AUTOLEARN == 'true'"),'Strong GPU training requires explicit enablement');
+assert(gpuWorkflow.includes('runs-on: [self-hosted, linux, x64, nova-gpu]'),'Strong training must not silently rent cloud GPUs');
+assert(gpuWorkflow.includes('training/build_nova_sft.py'),'Strong training must audit consented examples');
+assert(strongTrainer.includes('if improved:\n        trainer.save_model('),'Do not save Qwen adapter unless held-out validation improves');
+
 console.log('NOVA AutoLab promotion, confidence gate, checkpoint packing and schedule: PASSED');
