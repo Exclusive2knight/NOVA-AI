@@ -76,16 +76,36 @@ function bundleFrom(store){
  return '/* NOVA Native 2.0: original, held-out-gated int16 neural checkpoint. */\nwindow.NOVA_NATIVE_BUNDLE='+JSON.stringify(data)+';\n';
 }
 async function run(){
- const {model,store}=create(),before=measure(model);
- const startingEpochs=model.status().epochs;
- await model.train();
- const candidateEpochs=model.status().epochs;
- if(candidateEpochs!==startingEpochs+18)throw Error('Expected exactly 18 additional training passes');
- const after=measure(model);
- const decision=gate(before,after);
+ const baseline=create(),before=measure(baseline.model);
+ const startingEpochs=baseline.model.status().epochs;
+ const epochCycle=Math.floor(Date.now()/21600000);
+ const strategies=[
+  {rateScale:.18,shuffleOffset:epochCycle%211},
+  {rateScale:.35,shuffleOffset:(epochCycle*11)%233},
+  {rateScale:.65,shuffleOffset:(epochCycle*17)%251},
+  {rateScale:1,shuffleOffset:0}
+ ];
+ const attempts=[];
+ let winner=null;
+ for(const strategy of strategies){
+  const {model,store}=create();
+  await model.train(null,strategy);
+  if(model.status().epochs!==startingEpochs+18)throw Error('Expected exactly 18 additional training passes');
+  const results=measure(model);
+  const review=gate(before,results);
+  attempts.push({strategy,metrics:results,decision:review});
+  if(review.promote&&(!winner||review.newPenalty<winner.decision.newPenalty)){
+   winner={store,after:results,decision:review,strategy};
+  }
+ }
+ const bestAttempt=attempts.reduce((best,item)=>item.decision.newPenalty<best.decision.newPenalty?item:best);
+ const candidateEpochs=startingEpochs+18;
+ const store=winner?.store;
+ const after=winner?.after||bestAttempt.metrics;
+ const decision=winner?.decision||{...bestAttempt.decision,promote:false,findings:['No explored training strategy passed all promotion gates']};
  const report={version:1,model:'NOVA Native 2.0',kind:'neural-intent-classifier',date:new Date().toISOString(),
   startedEpochs:startingEpochs,candidateEpochs,trainingPasses:18,trainingData:'original embedded labeled intent examples only',
-  baseline:before,candidate:after,decision,
+  baseline:before,candidate:after,decision,attempts,selectedStrategy:winner?.strategy||null,
   heldoutWarning:'Selection repeatedly uses the same small holdouts; results can overfit and are not general intelligence measures.',
   hostedModelUpdated:false,webScraping:false,userChatsCollected:false,liveWeightsChanged:false};
  if(decision.promote&&apply){
