@@ -1,0 +1,42 @@
+# Optional real 8B QLoRA weight adaptation on the owner's own NVIDIA GPU.
+# Does not run or incur compute unless explicitly enabled and GPU runner supplied.
+name: NOVA Strong GPU AutoLab
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-gpu-autolab
+  cancel-in-progress: false
+
+jobs:
+  strong-learn:
+    if: github.repository == 'Exclusive2knight/NOVA-AI' && github.ref == 'refs/heads/main' && vars.NOVA_GPU_AUTOLEARN == 'true'
+    runs-on: [self-hosted, linux, x64, nova-gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify GPU capability and dataset restrictions
+        shell: bash
+        run: |
+          nvidia-smi
+          python3 -m pip install --upgrade pip
+          python3 -m pip install torch transformers accelerate datasets trl peft bitsandbytes
+          python3 training/build_nova_sft.py --input training/nova_sft_examples.jsonl --out-dir nova-data/sft
+      - name: Train Qwen3 8B adapter with held-out validation and checkpoint gating
+        run: python3 training/finetune_qwen3_8b_qlora.py --data-dir nova-data/sft --max-steps 30 --out-dir nova-data/nova-qwen3-8b-qlora
+      - name: Export training evidence and improved adapter if available
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-strong-training-${{ github.run_id }}
+          path: |
+            nova-data/nova-qwen3-8b-qlora/training_report.json
+            nova-data/nova-qwen3-8b-qlora/adapter
+          if-no-files-found: warn
+          retention-days: 14
