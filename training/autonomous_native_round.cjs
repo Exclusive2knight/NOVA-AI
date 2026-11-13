@@ -11,7 +11,7 @@ const opts=new Set(process.argv.slice(2));
 const apply=opts.has('--apply');
 const reportFlag=process.argv.indexOf('--report');
 const reportPath=reportFlag>=0?path.resolve(process.argv[reportFlag+1]||''):path.join(root,'native-learning-report.json');
-if(reportFlag>=0&&(!process.argv[reportFlag+1]||opts.has(process.argv[reportFlag+1])))throw Error('--report requires a path');
+if(reportFlag>=0&&(!process.argv[reportFlag+1]||process.argv[reportFlag+1].startsWith('--')))throw Error('--report requires a path');
 const weightsPath=path.join(root,'nova-native-weights.js');
 const bundle=fs.readFileSync(weightsPath,'utf8');
 const src=fs.readFileSync(path.join(root,'nova-native.js'),'utf8');
