@@ -128,17 +128,19 @@ if(!state)state={net:newNet(),teachings:[]};
 let ready=!!state.net.epochs,training=null;
 function status(){return{model:'NOVA Native 2.0',architecture:'Original supervised neural network: 1024 input, 48 hidden, 17 intent outputs',parameters:D*H+H+H*K+K,epochs:state.net.epochs,trained:ready,source:loadedFrom,teachings:state.teachings.length,online:false,provider:'None'}}
 function pause(){return new Promise(resolve=>setTimeout(resolve,0))}
-async function train(onStep){
+async function train(onStep,trainingOptions={}){
  if(training)return training;
  training=(async()=>{
   const rows=examples(state.teachings),net=state.net;
+  const rateScale=Number.isFinite(trainingOptions.rateScale)?Math.max(.05,Math.min(1.5,trainingOptions.rateScale)):1;
+  const shuffleOffset=Number.isSafeInteger(trainingOptions.shuffleOffset)?Math.max(0,Math.min(100000,trainingOptions.shuffleOffset)):0;
   if(onStep)onStep({type:'train',label:'Training original NOVA Native neural weights locally'});
   const start=net.epochs,goal=start>0?start+18:75;
   for(let epoch=start;epoch<goal;epoch++){
    // Fixed permutation with reproducible modular stride, changed across epochs.
    for(let k=0;k<rows.length;k++){
-    const idx=(k*73+epoch*11)%rows.length;
-    step(net,rows[idx][0],rows[idx][1],ALPHA/(1+epoch*.01));
+    const idx=(k*73+epoch*11+shuffleOffset)%rows.length;
+    step(net,rows[idx][0],rows[idx][1],ALPHA*rateScale/(1+epoch*.01));
    }
    net.epochs=epoch+1;
    if(epoch%10===0){if(onStep)onStep({type:'train',label:'Neural training '+Math.round((epoch+1)/goal*100)+'%'});await pause()}
